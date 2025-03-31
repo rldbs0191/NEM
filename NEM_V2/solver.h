@@ -22,6 +22,7 @@ public:
 	void ReadTitle(istream& ins);
 	void ReadCondition(istream &ins);
 	void PrintStructure() const { GEOMETRY.PrintStructure(); };
+	void PrintNodeNeighbors(int x, int y, int z) const { GEOMETRY.PrintNodeNeighbors(x,y,z); };
 	void PrintCX() const { CX.PrintCX(); };
 	void Run();
 };

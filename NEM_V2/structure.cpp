@@ -10,7 +10,7 @@ Geometry::Geometry()
 	SOLVER = nullptr;
 }
 
-void Geometry::ReadGeometry(std::istream& ins)
+void Geometry::ReadGeometry(istream& ins)
 {
 	char oneChar, buffer[LINE_LEN];
 	bool flag = false;
@@ -29,20 +29,20 @@ void Geometry::ReadGeometry(std::istream& ins)
 	}
 }
 
-void Geometry::ReadCell(std::istream& ins)
+void Geometry::ReadCell(istream& ins)
 {
 	char oneChar;
-	std::string line;
+	string line;
 
 	ins >> CelID;
 	ins >> oneChar;
 
 	CEL.clear();
-	std::vector<std::vector<Node>> layer;
+	vector<vector<int>> layer;
 
-	while (std::getline(ins, line))
+	while (getline(ins, line))
 	{
-		if (line.find(ENDSTR) != std::string::npos)
+		if (line.find(ENDSTR) != string::npos)
 			break;
 
 		if (line.empty()) {
@@ -53,19 +53,18 @@ void Geometry::ReadCell(std::istream& ins)
 			continue;
 		}
 
-		std::istringstream ss(line);
-		std::string token;
-		std::vector<Node> row;
+		istringstream ss(line);
+		string token;
+		vector<int> row;
 
 		while (ss >> token)
 		{
 			try {
-				int region = std::stoi(token);
-				Node node(region, SOLVER->nDIM);
-				row.push_back(node);
+				int region = stoi(token);
+				row.push_back(region);
 			}
-			catch (const std::invalid_argument&) {
-				std::cerr << "Warning: invalid token in CEL block: " << token << std::endl;
+			catch (const invalid_argument&) {
+				cerr << "Warning: invalid token in CEL block: " << token << endl;
 			}
 		}
 
@@ -80,82 +79,178 @@ void Geometry::ReadCell(std::istream& ins)
 	CELS[CelID] = CEL;
 }
 
-void Geometry::ReadStructure(std::istream& ins)
+void Geometry::ReadStructure(istream& ins)
 {
 	char oneChar;
-	std::string line;
+	string line;
 
-	ins >> oneChar;
+	ins >> oneChar; 
 	STRUCTURE.clear();
-	std::vector<std::vector<Cell>> layer;
 
-	while (std::getline(ins, line))
+	vector<vector<string>> structure2DLines;
+	vector<string> currentLine;
+
+	while (getline(ins, line))
 	{
-		if (line.find(ENDSTR) != std::string::npos)
+		if (line.find(ENDSTR) != string::npos)
 			break;
 
 		if (line.empty()) {
-			if (!layer.empty()) {
-				STRUCTURE.push_back(layer);
-				layer.clear();
+			if (!currentLine.empty()) {
+				structure2DLines.push_back(currentLine);
+				currentLine.clear();
 			}
 			continue;
 		}
 
-		std::istringstream ss(line);
-		std::string token;
-		std::vector<Cell> row;
-
-		while (ss >> token)
-		{
-			try {
-				int cellIndex = std::stoi(token);
-
-				if (CELS.find(cellIndex) != CELS.end()) {
-					row.push_back(CELS[cellIndex]);
-				}
-				else {
-					std::cerr << "Warning: CEL index not found: " << cellIndex << std::endl;
-				}
-			}
-			catch (const std::invalid_argument&) {
-				std::cerr << "Warning: invalid token in Structure block: " << token << std::endl;
-			}
-		}
-
-		if (!row.empty())
-			layer.push_back(row);
+		currentLine.push_back(line);
+	}
+	if (!currentLine.empty()) {
+		structure2DLines.push_back(currentLine);
 	}
 
-	if (!layer.empty()) {
-		STRUCTURE.push_back(layer);
+	auto sampleCell = CELS.begin()->second;
+	int K = sampleCell.size();                
+	int I = sampleCell[0].size();             
+	int J = sampleCell[0][0].size();          
+
+	int Z = structure2DLines.size();          
+	int Y = structure2DLines[0].size();       
+	int X = 0;                                
+
+	// 전체 구조 크기 정의
+	STRUCTURE.resize(Z * K);
+	for (int z = 0; z < Z * K; ++z) {
+		STRUCTURE[z].resize(Y * I);
+		for (int y = 0; y < Y * I; ++y)
+			STRUCTURE[z][y].resize(0);
+	}
+
+	for (int z = 0; z < Z; ++z) {
+		for (int y = 0; y < structure2DLines[z].size(); ++y) {
+			istringstream ss(structure2DLines[z][y]);
+			string token;
+			int x = 0;
+
+			while (ss >> token) {
+				int cellID = stoi(token);
+				if (CELS.find(cellID) == CELS.end()) {
+					cerr << "Invalid CEL ID: " << cellID << endl;
+					continue;
+				}
+
+				const auto& templateCell = CELS[cellID];
+
+				for (int k = 0; k < K; ++k) {
+					for (int i = 0; i < I; ++i) {
+						for (int j = 0; j < J; ++j) {
+							int globalZ = z * K + k;
+							int globalY = y * I + i;
+							int globalX = x * J + j;
+
+							if (STRUCTURE.size() <= globalZ)
+								STRUCTURE.resize(globalZ + 1);
+
+							if (STRUCTURE[globalZ].size() <= globalY)
+								STRUCTURE[globalZ].resize(globalY + 1);
+
+							if (STRUCTURE[globalZ][globalY].size() <= globalX)
+								STRUCTURE[globalZ][globalY].resize(globalX + 1);
+
+							STRUCTURE[globalZ][globalY][globalX] = templateCell[k][i][j];
+							GLOBAL_NODE[{globalX, globalY, globalZ}] = Node(templateCell[k][i][j], SOLVER->nDIM);
+							;
+						}
+					}
+				}
+				++x;
+			}
+		}
+	}
+	SetNeighbors();
+}
+
+void Geometry::SetNeighbors()
+{
+	int dim = SOLVER->nDIM;
+
+	for (auto it = GLOBAL_NODE.begin(); it != GLOBAL_NODE.end(); ++it)
+	{
+		const std::tuple<int, int, int>& coord = it->first;
+		Node& node = it->second;
+
+		int x = std::get<0>(coord);
+		int y = std::get<1>(coord);
+		int z = std::get<2>(coord);
+
+		if (dim > 0) {
+			auto left = GLOBAL_NODE.find(std::make_tuple(x - 1, y, z));
+			auto right = GLOBAL_NODE.find(std::make_tuple(x + 1, y, z));
+			if (left != GLOBAL_NODE.end())
+				node.accessNEIGHBOR()(X_dir, Left_side) = &left->second;
+			if (right != GLOBAL_NODE.end())
+				node.accessNEIGHBOR()(X_dir, Right_side) = &right->second;
+		}
+
+		if (dim > 1) {
+			auto down = GLOBAL_NODE.find(std::make_tuple(x, y - 1, z));
+			auto up = GLOBAL_NODE.find(std::make_tuple(x, y + 1, z));
+			if (down != GLOBAL_NODE.end())
+				node.accessNEIGHBOR()(Y_dir, Left_side) = &down->second;
+			if (up != GLOBAL_NODE.end())
+				node.accessNEIGHBOR()(Y_dir, Right_side) = &up->second;
+		}
+
+		if (dim > 2) {
+			auto back = GLOBAL_NODE.find(std::make_tuple(x, y, z - 1));
+			auto front = GLOBAL_NODE.find(std::make_tuple(x, y, z + 1));
+			if (back != GLOBAL_NODE.end())
+				node.accessNEIGHBOR()(Z_dir, Left_side) = &back->second;
+			if (front != GLOBAL_NODE.end())
+				node.accessNEIGHBOR()(Z_dir, Right_side) = &front->second;
+		}
 	}
 }
 
+
 void Geometry::PrintStructure() const
 {
-	std::cout << "\n[STRUCTURE]\n";
+	cout << "\n[STRUCTURE]\n";
 
 	for (size_t z = 0; z < STRUCTURE.size(); ++z)
 	{
-		std::cout << "Layer z = " << z << "\n";
+		cout << "Layer z = " << z << "\n";
+
 		for (size_t y = 0; y < STRUCTURE[z].size(); ++y)
 		{
 			for (size_t x = 0; x < STRUCTURE[z][y].size(); ++x)
 			{
-				const Cell& cell = STRUCTURE[z][y][x];
-				std::cout << " Cell (" << x << ", " << y << ", " << z << "):\n";
-				for (size_t k = 0; k < cell.size(); ++k) {
-					for (size_t i = 0; i < cell[k].size(); ++i) {
-						for (size_t j = 0; j < cell[k][i].size(); ++j) {
-							std::cout << std::setw(3) << cell[k][i][j].getREGION() << " ";
-						}
-						std::cout << "\n";
-					}
-					std::cout << "---\n";
-				}
-				std::cout << "\n";
+				cout << setw(3) << STRUCTURE[z][y][x] << " ";
 			}
+			cout << "\n";
+		}
+		cout << "----\n";
+	}
+}
+
+void Geometry::PrintNodeNeighbors(int x, int y, int z) const
+{
+	auto it = GLOBAL_NODE.find({ x, y, z });
+	if (it == GLOBAL_NODE.end()) {
+		cout << "Node (" << x << "," << y << "," << z << ") not found.\n";
+		return;
+	}
+	const Node& node = it->second;
+
+	cout << "Neighbors of (" << x << "," << y << "," << z << "):\n";
+	for (int d = 0; d < node.getDIM(); ++d) {
+		cout << "  Direction " << d << ":\n";
+		for (int s = 0; s < 2; ++s) {
+			Node* nb = node.getNEIGHBOR()(d, s);
+			if (nb)
+				cout << "    Side " << s << " → REGION = " << nb->getREGION() << "\n";
+			else
+				cout << "    Side " << s << " → (null)\n";
 		}
 	}
 }

@@ -1,4 +1,3 @@
-// structure.h
 #ifndef _STRUCTURE_H_
 #define _STRUCTURE_H_
 
@@ -8,9 +7,9 @@
 
 class Solver;
 
-typedef std::vector<std::vector<std::vector<Node>>> Cell;         
-typedef std::map<int, Cell> Cells;                                
-typedef std::vector<std::vector<std::vector<Cell>>> Structure;    
+typedef vector<vector<vector<int>>> Cell;
+typedef map<int, Cell> Cells;                                
+typedef vector<vector<vector<int>>> Structure;    
 
 class Geometry {
 
@@ -18,6 +17,7 @@ class Geometry {
 
 private:
 	int CelID;
+	map<tuple<int, int, int>, Node> GLOBAL_NODE;
 	Cell CEL;
 	Cells CELS;
 	Structure STRUCTURE;
@@ -28,10 +28,12 @@ public:
 	~Geometry() {};
 
 	void SetSolver(Solver* s) { SOLVER = s; }
-	void ReadGeometry(std::istream& ins);
-	void ReadCell(std::istream& ins);
-	void ReadStructure(std::istream& ins);
+	void ReadGeometry(istream& ins);
+	void ReadCell(istream& ins);
+	void ReadStructure(istream& ins);
+	void SetNeighbors();
 	void PrintStructure() const;
+	void PrintNodeNeighbors(int x, int y, int z) const;
 };
 
 #endif

@@ -2,7 +2,6 @@
 
 Node::Node( int region, int dim) : REGION(region), DIM(dim) {
     FLUX.setZero();
-    CX.setZero();
     A.setZero();
     D.setZero();
 

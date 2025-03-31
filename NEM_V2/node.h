@@ -4,7 +4,7 @@
 #include "define.h"
 
 typedef Matrix<double, Dynamic, Dynamic> GroupMatrix;
-typedef Matrix<double, Dynamic, Dynamic> CXTable;
+typedef Matrix<double, 4, Dynamic> CXTable;
 typedef Matrix<double, Dynamic, 1> MatrixG1;
 typedef vector<vector<MatrixG1>> MatrixG1_2D;
 typedef vector<vector<GroupMatrix>> GroupMatrix_2D;
@@ -15,9 +15,9 @@ private:
     int REGION, DIM;
     Array<double, 1, Dynamic> WIDTH;
     Array<double, 1, Dynamic> FLUX;
-    Array<int, Dynamic, 2> NEIGHBOR;
+    Array<Node*, Dynamic, 2> NEIGHBOR;
     Array<BOUNDARY_TYPE, Dynamic, 2> BOUNDARY;
-    CXTable CX;
+    //CXTable CX;
     GroupMatrix A;
     GroupMatrix D;
     GroupMatrix_2D Q;
@@ -26,18 +26,17 @@ private:
     MatrixG1_2D DL;
 
 public:
+    Node() : REGION(0), DIM(0) {}
     Node( int region, int dim);
     ~Node() {}
-
-    void setCX(const CXTable& table) { CX = table; }
 
     int getREGION() const { return REGION; }
     int getDIM() const { return DIM; }
 
     const Array<double, 1, Dynamic>& getWIDTH() const { return WIDTH; }
     const Array<double, 1, Dynamic>& getFLUX() const { return FLUX; }
-    const Array<int, Dynamic, 2>& getNEIGHBOR() const { return NEIGHBOR; }
-    const Array<double, Dynamic, Dynamic>& getCX() const { return CX; }
+    const Array<Node*, Dynamic, 2>& getNEIGHBOR() const { return NEIGHBOR; }
+    Array<Node*, Dynamic, 2>& accessNEIGHBOR() { return NEIGHBOR; }
 	const Array<BOUNDARY_TYPE, Dynamic, 2>& getBOUNDARY() const { return BOUNDARY; }
     const GroupMatrix getA() const { return A; }
     const GroupMatrix getD() const { return D; }

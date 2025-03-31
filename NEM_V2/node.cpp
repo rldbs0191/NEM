@@ -1,38 +1,47 @@
 #include "node.h"
 
-Node::Node( int region, int dim) : REGION(region), DIM(dim) {
-    FLUX.setZero();
-    A.setZero();
-    D.setZero();
+Node::Node() {
+	REGION = 0;
+	DIM = 0;
+	FLUX = nullptr;
+	BETA = nullptr;
+	WIDTH = nullptr;
+	NEIGHBOR = nullptr;
+	Q = nullptr;
+	C = nullptr;
+	OUT_CURRENT = nullptr;
+	INCOM_CURRENT = nullptr;
+	DL = nullptr;
+	BOUNDARY = nullptr;
+}
 
-	NEIGHBOR.resize(DIM, 2);
-    NEIGHBOR.setZero();
+Node::Node( int region, int dim) {
+	REGION = region;
+	DIM = dim;
+	FLUX = nullptr;
+	BETA = nullptr;
+	WIDTH = nullptr;
+	NEIGHBOR = nullptr;
+	Q = nullptr;
+	C = nullptr;
+	OUT_CURRENT = nullptr;
+	INCOM_CURRENT = nullptr;
+	DL = nullptr;
+	BOUNDARY = nullptr;
+}
 
-    WIDTH.resize(DIM);
-    WIDTH.setZero();
+void Node::updateTransverseLeakage( int dim, int group ) {
 
-	BOUNDARY.resize(DIM, 2);
-	for (int i = 0; i < DIM; ++i)
-		for (int j = 0; j < 2; ++j)
-			BOUNDARY(i, j) = REFLECTIVE;
+}
 
-    Q.resize(DIM, vector<GroupMatrix>(4));
-    for (int i = 0; i < DIM; ++i)
-        for (int j = 0; j < 4; ++j)
-            Q[i][j].setZero();
+void Node::update1Dflux() {
 
-    C.resize(DIM, vector<MatrixG1>(5));
-    for (int i = 0; i < DIM; ++i)
-        for (int j = 0; j < 5; ++j)
-            C[i][j].setZero();
+}
 
-    OUT_CURRENT.resize(DIM, vector<MatrixG1>(2));
-    for (int i = 0; i < DIM; ++i)
-        for (int j = 0; j < 2; ++j)
-            OUT_CURRENT[i][j].setZero();
+void Node::updateAverageFlux() {
 
-	DL.resize(DIM, vector<MatrixG1>(2));
-	for (int i = 0; i < DIM; ++i)
-		for (int j = 0; j < 2; ++j)
-			DL[i][j].setZero();
+}
+
+void Node::updateOutgoingCurrent() {
+
 }

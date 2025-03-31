@@ -3,7 +3,7 @@
 
 #include "define.h"
 
-typedef Array<double, Dynamic, Dynamic> CXArray;
+typedef double** CXArray;
 
 class CXManage {
 

@@ -10,6 +10,7 @@ class Solver;
 typedef vector<vector<vector<int>>> Cell;
 typedef map<int, Cell> Cells;                                
 typedef vector<vector<vector<int>>> Structure;    
+typedef map<tuple<int, int, int>, Node> NodeCoord;
 
 class Geometry {
 
@@ -17,7 +18,7 @@ class Geometry {
 
 private:
 	int CelID;
-	map<tuple<int, int, int>, Node> GLOBAL_NODE;
+	NodeCoord GLOBAL_NODE;
 	Cell CEL;
 	Cells CELS;
 	Structure STRUCTURE;

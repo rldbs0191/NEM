@@ -12,7 +12,7 @@ friend class CXManage;
 private:
 	int nDIM;
 	int nGROUP;
-	Array<double, 1, Dynamic> WIDTH;
+	double** WIDTH;
 	CXManage CX;
 	Geometry GEOMETRY;
 public:

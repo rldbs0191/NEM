@@ -5,10 +5,6 @@ CXManage::CXManage() {
 	nRegion = 0;
 	Group = 0;
 	SOLVER = nullptr;
-	DIFFUSION.setZero();
-	REMOVAL.setZero();
-	SCATTERING.setZero();
-	FISSION.setZero();
 }
 
 void CXManage::ReadCX(istream& ins) {
@@ -35,10 +31,6 @@ void CXManage::ReadCX(istream& ins) {
 
 		// resize 이후에만 ReadCXTable 실행
 		if (regionSet && tempGroup != -1) {
-			DIFFUSION.resize(nRegion, SOLVER->nGROUP);
-			REMOVAL.resize(nRegion, SOLVER->nGROUP);
-			SCATTERING.resize(nRegion, SOLVER->nGROUP);
-			FISSION.resize(nRegion, SOLVER->nGROUP);
 			ReadCXTable(ins, tempGroup-1);
 			tempGroup = -1; // reset
 		}
@@ -55,22 +47,22 @@ void CXManage::ReadCXTable(istream& ins, int groupIndex) {
 		if (!strcmp(buffer, "DIFFUSION"))
 		{
 			for (int i = 0; i < nRegion; ++i)
-				ins >> DIFFUSION(i, groupIndex);
+				ins >> DIFFUSION[i][groupIndex];
 		}
 		else if (!strcmp(buffer, "REMOVAL"))
 		{
 			for (int i = 0; i < nRegion; ++i)
-				ins >> REMOVAL(i, groupIndex);
+				ins >> REMOVAL[i][groupIndex];
 		}
 		else if (!strcmp(buffer, "SCATTER"))
 		{
 			for (int i = 0; i < nRegion; ++i)
-				ins >> SCATTERING(i, groupIndex);
+				ins >> SCATTERING[i][groupIndex];
 		}
 		else if (!strcmp(buffer, "FISSION"))
 		{
 			for (int i = 0; i < nRegion; ++i)
-				ins >> FISSION(i, groupIndex);
+				ins >> FISSION[i][groupIndex];
 		}
 		else if (!strcmp(buffer, ENDSTR))
 			flag = true;

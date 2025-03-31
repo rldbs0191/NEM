@@ -1,29 +1,30 @@
-#ifndef _DEFINE_H_
-#define _DEFINE_H_
+#ifndef _DEFINE_H_  
+#define _DEFINE_H_  
 
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <iomanip>
-#include <Eigen/Eigen>
-using namespace Eigen;
-using namespace std;
+#include <iostream>  
+#include <fstream>  
+#include <sstream>
+#include <string>  
+#include <iomanip>  
+#include <vector>
 
-#define LINE_LEN 100
+using namespace std;  
 
-#define X_dir 0
-#define Y_dir 1
-#define Z_dir 2
+#define LINE_LEN 100  
 
-#define Left_side 0
-#define Right_side 1
+#define X_dir 0  
+#define Y_dir 1  
+#define Z_dir 2  
 
-#define ENDSTR ");"
+#define Left_side 0  
+#define Right_side 1  
 
-enum BOUNDARY_TYPE
-{
-    REFLECTIVE,
-    VACUUM
-};
+#define ENDSTR ");"  
+
+enum BOUNDARY_TYPE  
+{  
+   REFLECTIVE,  
+   VACUUM  
+};  
 
 #endif

@@ -4,7 +4,6 @@ Solver::Solver()
 {
 	nDIM = 0;
 	nGROUP = 0;
-	WIDTH.resize(0);
 	CX = CXManage();
 }
 
@@ -71,9 +70,9 @@ void Solver::ReadCondition(istream &ins)
 			ins >> nGROUP;
 		else if (!strcmp(buffer, "WIDTH"))
 		{
-			WIDTH.resize(nDIM);
 			for (int i = 0; i < nDIM; ++i)
-				ins >> WIDTH(i);
+				for (int j=0; j < 2; ++j)
+					ins >> WIDTH[i][j];
 		}
 		else if (!strcmp(buffer, ENDSTR))
 			flag = true;

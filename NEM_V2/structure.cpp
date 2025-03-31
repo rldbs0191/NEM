@@ -18,10 +18,10 @@ void Geometry::ReadGeometry(istream& ins)
 	while (!flag && ins >> buffer)
 	{
 		if (!strcmp(buffer, "CEL")) {
-			this->ReadCell(ins);
+			ReadCell(ins);
 		}
 		else if (!strcmp(buffer, "Structure")) {
-			this->ReadStructure(ins);
+			ReadStructure(ins);
 		}
 		else if (!strcmp(buffer, ENDSTR)) {
 			flag = true;
@@ -110,13 +110,13 @@ void Geometry::ReadStructure(istream& ins)
 	}
 
 	auto sampleCell = CELS.begin()->second;
-	int K = sampleCell.size();                
-	int I = sampleCell[0].size();             
-	int J = sampleCell[0][0].size();          
+	size_t K = sampleCell.size();                
+	size_t I = sampleCell[0].size();
+	size_t J = sampleCell[0][0].size();
 
-	int Z = structure2DLines.size();          
-	int Y = structure2DLines[0].size();       
-	int X = 0;                                
+	size_t Z = structure2DLines.size();
+	size_t Y = structure2DLines[0].size();
+	size_t X = 0;
 
 	// 전체 구조 크기 정의
 	STRUCTURE.resize(Z * K);
@@ -144,9 +144,9 @@ void Geometry::ReadStructure(istream& ins)
 				for (int k = 0; k < K; ++k) {
 					for (int i = 0; i < I; ++i) {
 						for (int j = 0; j < J; ++j) {
-							int globalZ = z * K + k;
-							int globalY = y * I + i;
-							int globalX = x * J + j;
+							int globalZ = static_cast<int>(z * K + k);
+							int globalY = static_cast<int>(y * I + i);
+							int globalX = static_cast<int>(x * J + j);
 
 							if (STRUCTURE.size() <= globalZ)
 								STRUCTURE.resize(globalZ + 1);
@@ -174,40 +174,47 @@ void Geometry::SetNeighbors()
 {
 	int dim = SOLVER->nDIM;
 
-	for (auto it = GLOBAL_NODE.begin(); it != GLOBAL_NODE.end(); ++it)
+	map<tuple<int, int, int>, Node>::iterator it;
+	for (it = GLOBAL_NODE.begin(); it != GLOBAL_NODE.end(); ++it)
 	{
-		const std::tuple<int, int, int>& coord = it->first;
+		const tuple<int, int, int>& coord = it->first;
 		Node& node = it->second;
 
-		int x = std::get<0>(coord);
-		int y = std::get<1>(coord);
-		int z = std::get<2>(coord);
+		int x = get<0>(coord);
+		int y = get<1>(coord);
+		int z = get<2>(coord);
 
 		if (dim > 0) {
-			auto left = GLOBAL_NODE.find(std::make_tuple(x - 1, y, z));
-			auto right = GLOBAL_NODE.find(std::make_tuple(x + 1, y, z));
+			map<tuple<int, int, int>, Node>::iterator left =
+				GLOBAL_NODE.find(make_tuple(x - 1, y, z));
+			map<tuple<int, int, int>, Node>::iterator right =
+				GLOBAL_NODE.find(make_tuple(x + 1, y, z));
 			if (left != GLOBAL_NODE.end())
-				node.accessNEIGHBOR()(X_dir, Left_side) = &left->second;
+				node.setNEIGHBOR(X_dir, Left_side, &left->second);
 			if (right != GLOBAL_NODE.end())
-				node.accessNEIGHBOR()(X_dir, Right_side) = &right->second;
+				node.setNEIGHBOR(X_dir, Right_side, &right->second);
 		}
 
 		if (dim > 1) {
-			auto down = GLOBAL_NODE.find(std::make_tuple(x, y - 1, z));
-			auto up = GLOBAL_NODE.find(std::make_tuple(x, y + 1, z));
+			map<tuple<int, int, int>, Node>::iterator down =
+				GLOBAL_NODE.find(make_tuple(x, y - 1, z));
+			map<tuple<int, int, int>, Node>::iterator up =
+				GLOBAL_NODE.find(make_tuple(x, y + 1, z));
 			if (down != GLOBAL_NODE.end())
-				node.accessNEIGHBOR()(Y_dir, Left_side) = &down->second;
+				node.setNEIGHBOR(Y_dir, Left_side, &down->second);
 			if (up != GLOBAL_NODE.end())
-				node.accessNEIGHBOR()(Y_dir, Right_side) = &up->second;
+				node.setNEIGHBOR(Y_dir, Right_side, &up->second);
 		}
 
 		if (dim > 2) {
-			auto back = GLOBAL_NODE.find(std::make_tuple(x, y, z - 1));
-			auto front = GLOBAL_NODE.find(std::make_tuple(x, y, z + 1));
+			map<tuple<int, int, int>, Node>::iterator back =
+				GLOBAL_NODE.find(make_tuple(x, y, z - 1));
+			map<tuple<int, int, int>, Node>::iterator front =
+				GLOBAL_NODE.find(make_tuple(x, y, z + 1));
 			if (back != GLOBAL_NODE.end())
-				node.accessNEIGHBOR()(Z_dir, Left_side) = &back->second;
+				node.setNEIGHBOR(Z_dir, Left_side, &back->second);
 			if (front != GLOBAL_NODE.end())
-				node.accessNEIGHBOR()(Z_dir, Right_side) = &front->second;
+				node.setNEIGHBOR(Z_dir, Right_side, &front->second);
 		}
 	}
 }
@@ -246,7 +253,7 @@ void Geometry::PrintNodeNeighbors(int x, int y, int z) const
 	for (int d = 0; d < node.getDIM(); ++d) {
 		cout << "  Direction " << d << ":\n";
 		for (int s = 0; s < 2; ++s) {
-			Node* nb = node.getNEIGHBOR()(d, s);
+			Node* nb = node.getNEIGHBOR(d,s);
 			if (nb)
 				cout << "    Side " << s << " → REGION = " << nb->getREGION() << "\n";
 			else

@@ -121,7 +121,6 @@ void Geometry::ReadStructure(istream& ins)
 	size_t Y = structure2DLines[0].size();
 	size_t X = 0;
 
-	// 전체 구조 크기 정의
 	STRUCTURE.resize(Z * K);
 	for (int z = 0; z < Z * K; ++z) {
 		STRUCTURE[z].resize(Y * I);
@@ -161,8 +160,8 @@ void Geometry::ReadStructure(istream& ins)
 								STRUCTURE[globalZ][globalY].resize(globalX + 1);
 
 							STRUCTURE[globalZ][globalY][globalX] = templateCell[k][i][j];
-							GLOBAL_NODE[{globalX, globalY, globalZ}] = Node(templateCell[k][i][j], SOLVER);
-							;
+							Node node(templateCell[k][i][j], SOLVER);
+							GLOBAL_NODE[{globalX, globalY, globalZ}] = new Node(templateCell[k][i][j], SOLVER);
 						}
 					}
 				}
@@ -173,60 +172,40 @@ void Geometry::ReadStructure(istream& ins)
 	SetNeighbors();
 }
 
-void Geometry::SetNeighbors()
-{
-	int dim = SOLVER->nDIM;
-
-	for (auto& it : GLOBAL_NODE)
-	{
-		const tuple<int, int, int>& coord = it.first;
-		Node& node = it.second;
-
-		int x = get<0>(coord);
-		int y = get<1>(coord);
-		int z = get<2>(coord);
+void Geometry::SetNeighbors() {
+	for (auto& it : GLOBAL_NODE) {
+		const auto& coord = it.first;
+		Node* node = it.second;
+		int dim = SOLVER->nDIM;
+		int x = std::get<0>(coord);
+		int y = std::get<1>(coord);
+		int z = std::get<2>(coord);
 
 		if (dim > 0) {
-			if (x >= 0) {
-				auto left = GLOBAL_NODE.find(make_tuple(x - 1, y, z));
-				if (left != GLOBAL_NODE.end())
-					node.setNEIGHBOR(X_dir, Left_side, &left->second);
-			}
-			if (x < (STRUCTURE[z][y].size() - 1)) {
-				auto right = GLOBAL_NODE.find(make_tuple(x + 1, y, z));
-				if (right != GLOBAL_NODE.end())
-					node.setNEIGHBOR(X_dir, Right_side, &right->second);
-			}
+			auto left = GLOBAL_NODE.find({ x - 1, y, z });
+			node->setNEIGHBOR(X_dir, Left_side, (left != GLOBAL_NODE.end()) ? left->second : nullptr);
+
+			auto right = GLOBAL_NODE.find({ x + 1, y, z });
+			node->setNEIGHBOR(X_dir, Right_side, (right != GLOBAL_NODE.end()) ? right->second : nullptr);
 		}
 
 		if (dim > 1) {
-			if (y >= 0) {
-				auto down = GLOBAL_NODE.find(make_tuple(x, y - 1, z));
-				if (down != GLOBAL_NODE.end())
-					node.setNEIGHBOR(Y_dir, Left_side, &down->second);
-			}
-			if (y < (STRUCTURE[z].size() - 1)) {
-				auto up = GLOBAL_NODE.find(make_tuple(x, y + 1, z));
-				if (up != GLOBAL_NODE.end())
-					node.setNEIGHBOR(Y_dir, Right_side, &up->second);
-			}
+			auto down = GLOBAL_NODE.find({ x, y - 1, z });
+			node->setNEIGHBOR(Y_dir, Left_side, (down != GLOBAL_NODE.end()) ? down->second : nullptr);
+
+			auto up = GLOBAL_NODE.find({ x, y + 1, z });
+			node->setNEIGHBOR(Y_dir, Right_side, (up != GLOBAL_NODE.end()) ? up->second : nullptr);
 		}
 
 		if (dim > 2) {
-			if (z >= 0) {
-				auto back = GLOBAL_NODE.find(make_tuple(x, y, z - 1));
-				if (back != GLOBAL_NODE.end())
-					node.setNEIGHBOR(Z_dir, Left_side, &back->second);
-			}
-			if (z < (STRUCTURE.size() - 1)) {
-				auto front = GLOBAL_NODE.find(make_tuple(x, y, z + 1));
-				if (front != GLOBAL_NODE.end())
-					node.setNEIGHBOR(Z_dir, Right_side, &front->second);
-			}
+			auto back = GLOBAL_NODE.find({ x, y, z - 1 });
+			node->setNEIGHBOR(Z_dir, Left_side, (back != GLOBAL_NODE.end()) ? back->second : nullptr);
+
+			auto front = GLOBAL_NODE.find({ x, y, z + 1 });
+			node->setNEIGHBOR(Z_dir, Right_side, (front != GLOBAL_NODE.end()) ? front->second : nullptr);
 		}
 	}
 }
-
 
 void Geometry::PrintStructure() const
 {
@@ -255,17 +234,17 @@ void Geometry::PrintNodeNeighbors(int x, int y, int z) const
 		cout << "Node (" << x << "," << y << "," << z << ") not found.\n";
 		return;
 	}
-	const Node& node = it->second;
+	Node* node = it->second;
 
 	cout << "Neighbors of (" << x << "," << y << "," << z << "):\n";
 	for (int d = 0; d < SOLVER->nDIM; ++d) {
 		cout << "  Direction " << d << ":\n";
 		for (int s = 0; s < 2; ++s) {
-			Node* nb = node.getNEIGHBOR(d,s);
+			Node* nb = node->getNEIGHBOR(d, s);
 			if (nb)
-				cout << "    Side " << s << " → REGION = " << nb->getREGION() << "\n";
+				cout << "    Side " << s << " REGION = " << nb->getREGION() << "\n";
 			else
-				cout << "    Side " << s << " → (null)\n";
+				cout << "    Side " << s << " (null)\n";
 		}
 	}
 }

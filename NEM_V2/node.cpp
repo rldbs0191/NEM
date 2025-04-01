@@ -1,21 +1,6 @@
 #include "node.h"
 #include "solver.h"
 
-Node::Node() {
-	REGION = 0;
-	FLUX = nullptr;
-	BETA = nullptr;
-	WIDTH = nullptr;
-	NEIGHBOR = nullptr;
-	Q = nullptr;
-	C = nullptr;
-	OUT_CURRENT = nullptr;
-	INCOM_CURRENT = nullptr;
-	DL = nullptr;
-	BOUNDARY = nullptr;
-	SOLVER = nullptr;
-}
-
 Node::Node( int region, Solver* solver) {
 	SOLVER = solver;
 	REGION = region;
@@ -109,20 +94,4 @@ Node::~Node() {
 	delete3D(OUT_CURRENT, dim, 2);
 	delete3D(INCOM_CURRENT, dim, 2);
 	delete3D(DL, dim, 3);
-}
-
-void Node::updateTransverseLeakage( int dim, int group ) {
-
-}
-
-void Node::update1Dflux() {
-
-}
-
-void Node::updateAverageFlux() {
-
-}
-
-void Node::updateOutgoingCurrent() {
-
 }

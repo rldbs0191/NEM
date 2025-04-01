@@ -21,7 +21,6 @@ private:
     Solver* SOLVER;
 
 public:
-    Node();
     Node( int region, Solver* solver);
     ~Node();
 
@@ -31,16 +30,17 @@ public:
     const double* getFLUX() { return FLUX; }
     Node* getNEIGHBOR(int dir, int side ) const { return NEIGHBOR[dir][side]; }
     Node* accessNEIGHBOR( int dir, int side ) { return NEIGHBOR[dir][side]; }
-    void setNEIGHBOR(int dir, int side, Node* node) { NEIGHBOR[dir][side] = node; }
+    void setNEIGHBOR(int dir, int side, Node* node) {
+        if (!NEIGHBOR || !NEIGHBOR[dir]) {
+            std::cerr << "[ERROR] NEIGHBOR not initialized\n";
+            return;
+        }
+        NEIGHBOR[dir][side] = node;
+    }
 	const BOUNDARY_TYPE getBOUNDARY(int dir, int side) { return BOUNDARY[dir][side]; }
     double*** getQ() { return Q; }
     double*** getC() { return C; }
     double*** getOUT_CURRENT() { return OUT_CURRENT; }
-
-    void updateTransverseLeakage(int dim, int group );
-    void update1Dflux();
-    void updateAverageFlux();
-    void updateOutgoingCurrent();
 };
 
 #endif

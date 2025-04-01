@@ -20,7 +20,7 @@ private:
 	Solver* SOLVER;
 public:
 	CXManage();
-	~CXManage() {};
+	~CXManage();
 
 	void SetSolver(Solver* s) { SOLVER = s; }
 	void ReadCX(istream& ins);

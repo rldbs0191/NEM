@@ -14,6 +14,7 @@ void Geometry::ReadGeometry(istream& ins)
 {
 	char oneChar, buffer[LINE_LEN];
 	bool flag = false;
+	cout << "Read Geometry...." << "\n";
 	ins >> oneChar;
 	while (!flag && ins >> buffer)
 	{
@@ -31,6 +32,7 @@ void Geometry::ReadGeometry(istream& ins)
 
 void Geometry::ReadCell(istream& ins)
 {
+	cout << "Read Cell...." << "\n";
 	char oneChar;
 	string line;
 
@@ -81,6 +83,7 @@ void Geometry::ReadCell(istream& ins)
 
 void Geometry::ReadStructure(istream& ins)
 {
+	cout << "Read Structure...." << "\n";
 	char oneChar;
 	string line;
 
@@ -158,7 +161,7 @@ void Geometry::ReadStructure(istream& ins)
 								STRUCTURE[globalZ][globalY].resize(globalX + 1);
 
 							STRUCTURE[globalZ][globalY][globalX] = templateCell[k][i][j];
-							GLOBAL_NODE[{globalX, globalY, globalZ}] = Node(templateCell[k][i][j], SOLVER->nDIM);
+							GLOBAL_NODE[{globalX, globalY, globalZ}] = Node(templateCell[k][i][j], SOLVER);
 							;
 						}
 					}
@@ -174,47 +177,52 @@ void Geometry::SetNeighbors()
 {
 	int dim = SOLVER->nDIM;
 
-	map<tuple<int, int, int>, Node>::iterator it;
-	for (it = GLOBAL_NODE.begin(); it != GLOBAL_NODE.end(); ++it)
+	for (auto& it : GLOBAL_NODE)
 	{
-		const tuple<int, int, int>& coord = it->first;
-		Node& node = it->second;
+		const tuple<int, int, int>& coord = it.first;
+		Node& node = it.second;
 
 		int x = get<0>(coord);
 		int y = get<1>(coord);
 		int z = get<2>(coord);
 
 		if (dim > 0) {
-			map<tuple<int, int, int>, Node>::iterator left =
-				GLOBAL_NODE.find(make_tuple(x - 1, y, z));
-			map<tuple<int, int, int>, Node>::iterator right =
-				GLOBAL_NODE.find(make_tuple(x + 1, y, z));
-			if (left != GLOBAL_NODE.end())
-				node.setNEIGHBOR(X_dir, Left_side, &left->second);
-			if (right != GLOBAL_NODE.end())
-				node.setNEIGHBOR(X_dir, Right_side, &right->second);
+			if (x >= 0) {
+				auto left = GLOBAL_NODE.find(make_tuple(x - 1, y, z));
+				if (left != GLOBAL_NODE.end())
+					node.setNEIGHBOR(X_dir, Left_side, &left->second);
+			}
+			if (x < (STRUCTURE[z][y].size() - 1)) {
+				auto right = GLOBAL_NODE.find(make_tuple(x + 1, y, z));
+				if (right != GLOBAL_NODE.end())
+					node.setNEIGHBOR(X_dir, Right_side, &right->second);
+			}
 		}
 
 		if (dim > 1) {
-			map<tuple<int, int, int>, Node>::iterator down =
-				GLOBAL_NODE.find(make_tuple(x, y - 1, z));
-			map<tuple<int, int, int>, Node>::iterator up =
-				GLOBAL_NODE.find(make_tuple(x, y + 1, z));
-			if (down != GLOBAL_NODE.end())
-				node.setNEIGHBOR(Y_dir, Left_side, &down->second);
-			if (up != GLOBAL_NODE.end())
-				node.setNEIGHBOR(Y_dir, Right_side, &up->second);
+			if (y >= 0) {
+				auto down = GLOBAL_NODE.find(make_tuple(x, y - 1, z));
+				if (down != GLOBAL_NODE.end())
+					node.setNEIGHBOR(Y_dir, Left_side, &down->second);
+			}
+			if (y < (STRUCTURE[z].size() - 1)) {
+				auto up = GLOBAL_NODE.find(make_tuple(x, y + 1, z));
+				if (up != GLOBAL_NODE.end())
+					node.setNEIGHBOR(Y_dir, Right_side, &up->second);
+			}
 		}
 
 		if (dim > 2) {
-			map<tuple<int, int, int>, Node>::iterator back =
-				GLOBAL_NODE.find(make_tuple(x, y, z - 1));
-			map<tuple<int, int, int>, Node>::iterator front =
-				GLOBAL_NODE.find(make_tuple(x, y, z + 1));
-			if (back != GLOBAL_NODE.end())
-				node.setNEIGHBOR(Z_dir, Left_side, &back->second);
-			if (front != GLOBAL_NODE.end())
-				node.setNEIGHBOR(Z_dir, Right_side, &front->second);
+			if (z >= 0) {
+				auto back = GLOBAL_NODE.find(make_tuple(x, y, z - 1));
+				if (back != GLOBAL_NODE.end())
+					node.setNEIGHBOR(Z_dir, Left_side, &back->second);
+			}
+			if (z < (STRUCTURE.size() - 1)) {
+				auto front = GLOBAL_NODE.find(make_tuple(x, y, z + 1));
+				if (front != GLOBAL_NODE.end())
+					node.setNEIGHBOR(Z_dir, Right_side, &front->second);
+			}
 		}
 	}
 }
@@ -250,7 +258,7 @@ void Geometry::PrintNodeNeighbors(int x, int y, int z) const
 	const Node& node = it->second;
 
 	cout << "Neighbors of (" << x << "," << y << "," << z << "):\n";
-	for (int d = 0; d < node.getDIM(); ++d) {
+	for (int d = 0; d < SOLVER->nDIM; ++d) {
 		cout << "  Direction " << d << ":\n";
 		for (int s = 0; s < 2; ++s) {
 			Node* nb = node.getNEIGHBOR(d,s);

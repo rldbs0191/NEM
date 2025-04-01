@@ -4,7 +4,14 @@ Solver::Solver()
 {
 	nDIM = 0;
 	nGROUP = 0;
+	WIDTH = nullptr;
 	CX = CXManage();
+}
+
+Solver::~Solver() {
+	if (WIDTH) {
+		delete[] WIDTH;
+	}
 }
 
 void Solver::ReadInput(const char* input)
@@ -21,7 +28,9 @@ void Solver::ReadInput(const char* input)
 		if (!strcmp(buffer, "Title"))
 			this->ReadTitle(file);
 		else if (!strcmp(buffer, "Condition"))
+		{
 			this->ReadCondition(file);
+		}
 		else if (!strcmp(buffer, "CX")) {
 			CX.SetSolver(this);
 			CX.ReadCX(file);
@@ -57,22 +66,25 @@ void Solver::ReadCondition(istream &ins)
 {
 	char oneChar, buffer[LINE_LEN];
 	bool flag = false;
-
+	cout << "Read Condition...." << "\n";
 	ins >> oneChar;
 
 	while (flag == false)
 	{
 		ins >> buffer;
 
-		if (!strcmp(buffer, "DIM"))
+		if (!strcmp(buffer, "DIM")) {
 			ins >> nDIM;
+			WIDTH = new double [nDIM];
+		}
 		else if (!strcmp(buffer, "GROUP_NUM"))
 			ins >> nGROUP;
 		else if (!strcmp(buffer, "WIDTH"))
 		{
-			for (int i = 0; i < nDIM; ++i)
-				for (int j=0; j < 2; ++j)
-					ins >> WIDTH[i][j];
+			for (int i = 0; i < nDIM; i++)
+			{
+				ins >> WIDTH[i];
+			}
 		}
 		else if (!strcmp(buffer, ENDSTR))
 			flag = true;

@@ -3,29 +3,31 @@
 
 #include "define.h"
 
+class Solver;
+
 class Node {
 private:
-    int REGION, DIM;
-    double** WIDTH;
+    int REGION;
+    double* WIDTH;
     double* FLUX;
     Node*** NEIGHBOR;
     BOUNDARY_TYPE** BOUNDARY;
-    double** BETA;
+    double* BETA;
     double*** Q;
     double*** C;
     double*** OUT_CURRENT;
     double*** INCOM_CURRENT;
     double*** DL;
+    Solver* SOLVER;
 
 public:
     Node();
-    Node( int region, int dim);
-    ~Node() {}
+    Node( int region, Solver* solver);
+    ~Node();
 
     int getREGION() const { return REGION; }
-    int getDIM() const { return DIM; }
 
-    const double getWIDTH(int dir, int side) { return WIDTH[dir][side]; }
+    const double getWIDTH(int dir) { return WIDTH[dir]; }
     const double* getFLUX() { return FLUX; }
     Node* getNEIGHBOR(int dir, int side ) const { return NEIGHBOR[dir][side]; }
     Node* accessNEIGHBOR( int dir, int side ) { return NEIGHBOR[dir][side]; }

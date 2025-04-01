@@ -13,9 +13,6 @@ typedef vector<vector<vector<int>>> Structure;
 typedef map<tuple<int, int, int>, Node> NodeCoord;
 
 class Geometry {
-
-	friend class Solver;
-
 private:
 	int CelID;
 	NodeCoord GLOBAL_NODE;

@@ -8,16 +8,17 @@ class Solver {
 
 friend class Geometry;
 friend class CXManage;
+friend class Node;
 
 private:
 	int nDIM;
 	int nGROUP;
-	double** WIDTH;
+	double* WIDTH;
 	CXManage CX;
 	Geometry GEOMETRY;
 public:
 	Solver();
-	~Solver() {}
+	~Solver();
 	void ReadInput(const char* input);
 	void ReadTitle(istream& ins);
 	void ReadCondition(istream &ins);

@@ -96,8 +96,8 @@ void CXManage::ReadCXTable(istream& ins, int groupIndex) {
 
 void CXManage::PrintCX() const {
 	cout << "\n[CX]\n";
-	cout << "Region ¼ö: " << nRegion << "\n";
-	cout << "Group ¼ö: " << Group << "\n";
+	cout << "Region : " << nRegion << "\n";
+	cout << "Group : " << Group << "\n";
 	cout << scientific << setprecision(2);
 	cout << "\n[DIFFUSION]\n" << "\n";
 	cout << "\n[REMOVAL]\n" << "\n";

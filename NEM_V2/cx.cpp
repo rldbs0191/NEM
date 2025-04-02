@@ -7,7 +7,6 @@ CXManage::CXManage() : DIFFUSION(nullptr), REMOVAL(nullptr), SCATTERING(nullptr)
 	SOLVER = nullptr;
 }
 
-
 CXManage::~CXManage() {
 	for (int i = 0; i < nRegion; ++i) {
 		delete[] DIFFUSION[i];

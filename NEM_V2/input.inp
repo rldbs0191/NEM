@@ -10,7 +10,7 @@ Condition (
 
 Geometry (
 	CEL 1 (
-	3 2 2 2 3 2 4 4 0
+	3 2 2 2 3 2 4 4
 	);
 
 	Structure (
@@ -30,7 +30,7 @@ CX (
 	GROUP 2 (                                     
 	DIFFUSION 4E-1     4E-1     3E-1     3E-1     3E-1    
 	REMOVAL   2E-2     1E-2     1E-2     0.0      0.0     
-	SCATTER   8.0E-2   8.5E-2   1.3E-2   1.0E-2   5.5E-2  
+	SCATTER   8.0E-2   8.5E-2   1.3E-1   1.0E-2   5.5E-2  
 	FISSION   1.35E-1  1.35E-1  1.35E-1  0.0      0.0     
 	);
 );

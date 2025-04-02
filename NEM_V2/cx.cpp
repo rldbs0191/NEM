@@ -97,7 +97,8 @@ void CXManage::SetCoefficient() {
 	const auto& globalNodes = SOLVER->GEOMETRY.GetGlobalNode();
 	for (auto& entry : globalNodes) {
 		Node* node = entry.second;
-		int region = node->getREGION();
+		
+		int region = node->getREGION()-1;
 		node->SetCrossSection(
 			DIFFUSION[region],
 			REMOVAL[region],

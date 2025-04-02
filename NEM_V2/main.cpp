@@ -6,7 +6,7 @@ int main(void) {
 	solver.PrintStructure();
 	solver.PrintNodeNeighbors(0, 0, 0);
 	solver.PrintCX();
-	solver.PrintNodeInfo(1, 0, 0);
+	solver.PrintNodeInfo(0, 0, 0);
 	solver.Run();
 	return 0;
 }

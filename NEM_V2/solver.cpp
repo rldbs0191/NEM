@@ -101,6 +101,22 @@ void Solver::ReadCondition(istream &ins)
 void Solver::Run()
 {
 	cout << "Solver is running..." << endl;
+	const auto& globalNodes = GEOMETRY.GetGlobalNode();
+	int max_iter = 10;
+	for (int iter = 0; iter < max_iter; ++iter) {
+		double k_old = K_EFF;
+
+		// 1. 모든 노드에 대해 업데이트 수행
+		for (auto& entry : globalNodes) {
+			Node* node = entry.second;
+			node->updateTransverseLeakage();
+			node->makeOneDimensionalFlux();
+			node->updateAverageFlux();
+			node->updateOutgoingCurrent();
+		}
+		PrintNodeInfo(0, 0, 0);
+	}
+
 }
 
 

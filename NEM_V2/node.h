@@ -47,7 +47,7 @@ public:
     double getSurfaceFlux(int dim, int side, int group) { return 2*(INCOM_CURRENT[dim][side][group]+OUT_CURRENT[dim][side][group]); }
 
     void add_product(double* SRC, double* M1, double* C, int group);
-    void GaussianElimination(double** M3, double* C, double* SRC, int group);
+    void GaussianElimination(double** M_in, double* C, double* SRC, int group);
 
     void updateTransverseLeakage();
     void makeOneDimensionalFlux();

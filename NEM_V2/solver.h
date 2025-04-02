@@ -14,6 +14,8 @@ private:
 	int nDIM;
 	int nGROUP;
 	double* WIDTH;
+	double K_EFF=1.0;
+	double* X;
 	CXManage CX;
 	Geometry GEOMETRY;
 public:
@@ -22,9 +24,10 @@ public:
 	void ReadInput(const char* input);
 	void ReadTitle(istream& ins);
 	void ReadCondition(istream &ins);
-	void PrintStructure() const { GEOMETRY.PrintStructure(); };
-	void PrintNodeNeighbors(int x, int y, int z) const { GEOMETRY.PrintNodeNeighbors(x,y,z); };
+	void PrintStructure() const { GEOMETRY.PrintStructure(); }
+	void PrintNodeNeighbors(int x, int y, int z) const { GEOMETRY.PrintNodeNeighbors(x,y,z); }
 	void PrintCX() const { CX.PrintCX(); };
+	void PrintNodeInfo(int x, int y, int z) const { GEOMETRY.PrintNodeInfo(x, y, z); }
 	void Run();
 };
 #endif

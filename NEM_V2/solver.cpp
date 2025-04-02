@@ -5,7 +5,9 @@ Solver::Solver()
 	nDIM = 0;
 	nGROUP = 0;
 	WIDTH = nullptr;
+	X = nullptr;
 	CX = CXManage();
+	GEOMETRY = Geometry();
 }
 
 Solver::~Solver() {
@@ -41,6 +43,7 @@ void Solver::ReadInput(const char* input)
 		}
 	}
 	file.close();
+	CX.SetCoefficient();
 }
 
 void Solver::ReadTitle(istream& ins)
@@ -77,8 +80,12 @@ void Solver::ReadCondition(istream &ins)
 			ins >> nDIM;
 			WIDTH = new double [nDIM];
 		}
-		else if (!strcmp(buffer, "GROUP_NUM"))
+		else if (!strcmp(buffer, "GROUP_NUM")) {
 			ins >> nGROUP;
+			X = new double[nGROUP];
+			for (int i = 0; i < nGROUP; i++)
+				X[i] = 1.0;
+		}
 		else if (!strcmp(buffer, "WIDTH"))
 		{
 			for (int i = 0; i < nDIM; i++)

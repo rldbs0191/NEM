@@ -21,42 +21,39 @@ CXManage::~CXManage() {
 	delete[] FISSION;
 }
 
+void CXManage::SetSolver(Solver* s){
+	SOLVER = s;
+	Group = s->nGROUP;
+}
+
 void CXManage::ReadCX(istream& ins) {
 	char oneChar, buffer[LINE_LEN];
 	bool flag = false;
 
-	int tempGroup = -1;
-	bool regionSet = false;
 	cout << "Read CX...." << "\n";
 	ins >> oneChar;
 
 	while (!flag && ins >> buffer) {
 		if (!strcmp(buffer, "REGION_NUM")) {
 			ins >> nRegion;
-			regionSet = true;
-		}
-		else if (!strcmp(buffer, "GROUP")) {
-			ins >> Group;
-			tempGroup = Group;
-		}
-		else if (!strcmp(buffer, ENDSTR)) {
-			flag = true;
-		}
-
-		if (regionSet && tempGroup != -1) {
 			DIFFUSION = new double* [nRegion];
 			REMOVAL = new double* [nRegion];
 			SCATTERING = new double* [nRegion];
 			FISSION = new double* [nRegion];
-
 			for (int i = 0; i < nRegion; ++i) {
-				DIFFUSION[i] = new double[Group] {};
-				REMOVAL[i] = new double[Group] {};
-				SCATTERING[i] = new double[Group] {};
-				FISSION[i] = new double[Group] {};
+				DIFFUSION[i] = new double[Group]();
+				REMOVAL[i] = new double[Group]();
+				SCATTERING[i] = new double[Group]();
+				FISSION[i] = new double[Group]();
 			}
-			ReadCXTable(ins, tempGroup-1);
-			tempGroup = -1; // reset
+		}
+		else if (!strcmp(buffer, "GROUP")) {
+			int groupIndex;
+			ins >> groupIndex;
+			ReadCXTable(ins, groupIndex - 1);
+		}
+		else if (!strcmp(buffer, ENDSTR)) {
+			flag = true;
 		}
 	}
 }
@@ -66,31 +63,47 @@ void CXManage::ReadCXTable(istream& ins, int groupIndex) {
 	bool flag = false;
 	cout << "Read CXTable...." << "\n";
 	ins >> oneChar;
-	while (!flag)
-	{
+
+	while (!flag) {
 		ins >> buffer;
-		if (!strcmp(buffer, "DIFFUSION"))
-		{
-			for (int i = 0; i < nRegion; ++i)
+
+		if (!strcmp(buffer, "DIFFUSION")) {
+			for (int i = 0; i < nRegion; ++i) {
 				ins >> DIFFUSION[i][groupIndex];
+			}
 		}
-		else if (!strcmp(buffer, "REMOVAL"))
-		{
-			for (int i = 0; i < nRegion; ++i)
+		else if (!strcmp(buffer, "REMOVAL")) {
+			for (int i = 0; i < nRegion; ++i) {
 				ins >> REMOVAL[i][groupIndex];
+			}
 		}
-		else if (!strcmp(buffer, "SCATTER"))
-		{
-			for (int i = 0; i < nRegion; ++i)
+		else if (!strcmp(buffer, "SCATTER")) {
+			for (int i = 0; i < nRegion; ++i) {
 				ins >> SCATTERING[i][groupIndex];
+			}
 		}
-		else if (!strcmp(buffer, "FISSION"))
-		{
-			for (int i = 0; i < nRegion; ++i)
+		else if (!strcmp(buffer, "FISSION")) {
+			for (int i = 0; i < nRegion; ++i) {
 				ins >> FISSION[i][groupIndex];
+			}
 		}
-		else if (!strcmp(buffer, ENDSTR))
+		else if (!strcmp(buffer, ENDSTR)) {
 			flag = true;
+		}
+	}
+}
+
+void CXManage::SetCoefficient() {
+	const auto& globalNodes = SOLVER->GEOMETRY.GetGlobalNode();
+	for (auto& entry : globalNodes) {
+		Node* node = entry.second;
+		int region = node->getREGION();
+		node->SetCrossSection(
+			DIFFUSION[region],
+			REMOVAL[region],
+			SCATTERING[region],
+			FISSION[region]
+		);
 	}
 }
 
@@ -100,8 +113,32 @@ void CXManage::PrintCX() const {
 	cout << "Group : " << Group << "\n";
 	cout << scientific << setprecision(2);
 	cout << "\n[DIFFUSION]\n" << "\n";
+	for (int i = 0; i < nRegion; i++) {
+		for (int j = 0; j < Group; j++)
+			cout << DIFFUSION[i][j]<<" ";
+		cout << "\n";
+	}
+	cout << "\n";
 	cout << "\n[REMOVAL]\n" << "\n";
+	for (int i = 0; i < nRegion; i++) {
+		for (int j = 0; j < Group; j++)
+			cout << REMOVAL[i][j] << " ";
+		cout << "\n";
+	}
+	cout << "\n";
 	cout << "\n[SCATTERING]\n" << "\n";
+	for (int i = 0; i < nRegion; i++) {
+		for (int j = 0; j < Group; j++)
+			cout << SCATTERING[i][j] << " ";
+		cout << "\n";
+	}
+	cout << "\n";
 	cout << "\n[FISSION]\n" << "\n";
+	for (int i = 0; i < nRegion; i++) {
+		for (int j = 0; j < Group; j++)
+			cout << FISSION[i][j] << " ";
+		cout << "\n";
+	}
+	cout << "\n";
 	cout << defaultfloat;
 }

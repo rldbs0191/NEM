@@ -24,7 +24,7 @@ private:
 public:
 	Geometry();
 	~Geometry() {};
-
+	const NodeCoord& GetGlobalNode() const { return GLOBAL_NODE; }
 	void SetSolver(Solver* s) { SOLVER = s; }
 	void ReadGeometry(istream& ins);
 	void ReadCell(istream& ins);
@@ -32,6 +32,7 @@ public:
 	void SetNeighbors();
 	void PrintStructure() const;
 	void PrintNodeNeighbors(int x, int y, int z) const;
+	void PrintNodeInfo(int x, int y, int z) const;
 };
 
 #endif

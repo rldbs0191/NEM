@@ -22,9 +22,10 @@ public:
 	CXManage();
 	~CXManage();
 
-	void SetSolver(Solver* s) { SOLVER = s; }
+	void SetSolver(Solver* s);
 	void ReadCX(istream& ins);
 	void ReadCXTable(istream& ins, int groupIndex);
+	void SetCoefficient();
 	void PrintCX() const;
 };
 

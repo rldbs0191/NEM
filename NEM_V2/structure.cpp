@@ -87,8 +87,9 @@ void Geometry::ReadStructure(istream& ins)
 	char oneChar;
 	string line;
 
-	ins >> oneChar; 
+	ins >> oneChar;
 	STRUCTURE.clear();
+	GLOBAL_NODE.clear();
 
 	vector<vector<string>> structure2DLines;
 	vector<string> currentLine;
@@ -113,23 +114,17 @@ void Geometry::ReadStructure(istream& ins)
 	}
 
 	auto sampleCell = CELS.begin()->second;
-	size_t K = sampleCell.size();                
+	size_t K = sampleCell.size();
 	size_t I = sampleCell[0].size();
 	size_t J = sampleCell[0][0].size();
 
 	size_t Z = structure2DLines.size();
 	size_t Y = structure2DLines[0].size();
-	size_t X = 0;
 
 	STRUCTURE.resize(Z * K);
-	for (int z = 0; z < Z * K; ++z) {
-		STRUCTURE[z].resize(Y * I);
-		for (int y = 0; y < Y * I; ++y)
-			STRUCTURE[z][y].resize(0);
-	}
 
-	for (int z = 0; z < Z; ++z) {
-		for (int y = 0; y < structure2DLines[z].size(); ++y) {
+	for (size_t z = 0; z < Z; ++z) {
+		for (size_t y = 0; y < structure2DLines[z].size(); ++y) {
 			istringstream ss(structure2DLines[z][y]);
 			string token;
 			int x = 0;
@@ -143,24 +138,19 @@ void Geometry::ReadStructure(istream& ins)
 
 				const auto& templateCell = CELS[cellID];
 
-				for (int k = 0; k < K; ++k) {
-					for (int i = 0; i < I; ++i) {
-						for (int j = 0; j < J; ++j) {
-							int globalZ = static_cast<int>(z * K + k);
-							int globalY = static_cast<int>(y * I + i);
-							int globalX = static_cast<int>(x * J + j);
-
-							if (STRUCTURE.size() <= globalZ)
-								STRUCTURE.resize(globalZ + 1);
+				for (size_t k = 0; k < K; ++k) {
+					for (size_t i = 0; i < I; ++i) {
+						for (size_t j = 0; j < J; ++j) {
+							size_t globalZ = z * K + k;
+							size_t globalY = y * I + i;
+							size_t globalX = x * J + j;
 
 							if (STRUCTURE[globalZ].size() <= globalY)
 								STRUCTURE[globalZ].resize(globalY + 1);
-
 							if (STRUCTURE[globalZ][globalY].size() <= globalX)
 								STRUCTURE[globalZ][globalY].resize(globalX + 1);
 
 							STRUCTURE[globalZ][globalY][globalX] = templateCell[k][i][j];
-							Node node(templateCell[k][i][j], SOLVER);
 							GLOBAL_NODE[{globalX, globalY, globalZ}] = new Node(templateCell[k][i][j], SOLVER);
 						}
 					}
@@ -169,6 +159,7 @@ void Geometry::ReadStructure(istream& ins)
 			}
 		}
 	}
+
 	SetNeighbors();
 }
 
@@ -214,9 +205,9 @@ void Geometry::PrintStructure() const
 	for (size_t z = 0; z < STRUCTURE.size(); ++z)
 	{
 		cout << "Layer z = " << z << "\n";
-
 		for (size_t y = 0; y < STRUCTURE[z].size(); ++y)
 		{
+			cout << "y = " << y << "\n";
 			for (size_t x = 0; x < STRUCTURE[z][y].size(); ++x)
 			{
 				cout << setw(3) << STRUCTURE[z][y][x] << " ";
@@ -246,5 +237,54 @@ void Geometry::PrintNodeNeighbors(int x, int y, int z) const
 			else
 				cout << "    Side " << s << " (null)\n";
 		}
+	}
+}
+
+void Geometry::PrintNodeInfo(int x, int y, int z) const {
+	auto it = GLOBAL_NODE.find({ x, y, z });
+	if (it == GLOBAL_NODE.end()) {
+		cout << "Node (" << x << ", " << y << ", " << z << ") not found.\n";
+		return;
+	}
+
+	Node* node = it->second;
+	int group = SOLVER->nGROUP;
+	int dim = SOLVER->nDIM;
+
+	cout << "===== Node (" << x << ", " << y << ", " << z << ") =====\n";
+	cout << "REGION: " << node->getREGION() << "\n";
+
+	cout << "WIDTH: ";
+	for (int d = 0; d < dim; ++d)
+		cout << node->getWIDTH(d) << " ";
+	cout << "\n";
+	cout << scientific << setprecision(2);
+	cout << "FLUX: ";
+	for (int g = 0; g < group; ++g)
+		cout << node->getFLUX(g) << " ";
+	cout << "\n";
+
+	cout << "BETA: ";
+	for(int u=0;u<dim;u++)
+		for (int g = 0; g < group; ++g)
+			cout << node->BETA[u][g] << " ";
+	cout << "\n";
+
+	cout << "A Matrix:\n";
+	for (int i = 0; i < group; ++i) {
+		for (int j = 0; j < group; ++j) {
+			cout << node->A[i][j] << " ";
+		}
+		cout << "\n";
+	}
+
+	cout << "Q Matrix:\n";
+	for (int i = 0; i < dim; ++i) {
+		for (int j = 0; j < 4; ++j) {
+			for (int k = 0; k < group; k++)
+				cout << node->Q[i][j][k] << " ";
+			cout << "\n";
+		}
+		cout << "\n";
 	}
 }

@@ -7,13 +7,23 @@ Node::Node( int region, Solver* solver) {
 	int group = solver->nGROUP;
 	int dim = solver->nDIM;
 
-	WIDTH = new double[dim] ;
+	WIDTH = new double[dim]() ;
 	for (int i = 0; i < dim; i++)
 		WIDTH[i] = solver->WIDTH[i];
 	FLUX = new double[group] {};
 	for (int i = 0; i < group; i++)
 		FLUX[i] = 1.0;
-	BETA = new double[group] {};
+	old_FLUX = new double[group] {};
+	for (int i = 0; i < group; i++)
+		old_FLUX[i] = 1.0;
+	D_c = new double[group]();
+	BETA = new double*[dim];
+	for (int i = 0; i < dim; i++)
+		BETA[i] = new double[group]();
+
+	A = new double*[group];
+	for (int i = 0; i < group; i++)
+		A[i] = new double[group]();
 
 	NEIGHBOR = new Node**[dim];
 	BOUNDARY = new BOUNDARY_TYPE * [dim];
@@ -36,10 +46,12 @@ Node::Node( int region, Solver* solver) {
 		INCOM_CURRENT[i] = new double* [2];
 		DL[i] = new double* [3];
 
-		for (int j = 0; j < 4; ++j)
-			Q[i][j] = new double[group];
+		for (int j = 0; j < 4; ++j) 
+			Q[i][j] = new double[group]();
+		
 		for (int j = 0; j < 5; ++j)
-			C[i][j] = new double[group];
+			C[i][j] = new double[group]();
+		
 		for (int j = 0; j < 2; ++j) {
 			OUT_CURRENT[i][j] = new double[group];
 			INCOM_CURRENT[i][j] = new double[group];
@@ -56,6 +68,29 @@ Node::Node( int region, Solver* solver) {
 				DL[i][j][k] = 1.0;
 		}
 	}
+	SRC1 = new double[group]();
+	SRC2 = new double[group]();
+	SRC = new double[group]();
+
+	M1 = new double* [dim];
+	M2 = new double* [dim];
+	for (int i = 0; i < dim; i++) {
+		M1[i] = new double[group]();
+		M2[i] = new double[group]();
+	}
+	M3 = new double** [dim];
+	M4 = new double** [dim];
+	for (int i = 0; i < dim; i++) {
+		M3[i] = new double* [group];
+		M4[i] = new double* [group];
+		for (int j = 0; j < group; j++) {
+			M3[i][j] = new double[group]();
+			M4[i][j] = new double[group]();
+		}
+	}
+	MM = new double* [group];
+	for (int i = 0; i < group; i++)
+		MM[i] = new double[group]();
 }
 
 Node::~Node() {
@@ -70,6 +105,11 @@ Node::~Node() {
 		for (int i = 0; i < dim; ++i)
 			delete[] NEIGHBOR[i];
 		delete[] NEIGHBOR;
+	}
+	if (A) {
+		for (int i = 0; i < group; ++i)
+			delete[] A[i];
+		delete[] A;
 	}
 
 	if (BOUNDARY) {
@@ -94,4 +134,141 @@ Node::~Node() {
 	delete3D(OUT_CURRENT, dim, 2);
 	delete3D(INCOM_CURRENT, dim, 2);
 	delete3D(DL, dim, 3);
+}
+
+void Node::SetCrossSection(double* D, double* R, double* S, double* F) {
+	int group = SOLVER->nGROUP;
+	int dim = SOLVER->nDIM;
+	double* x = SOLVER->X;
+	double k = SOLVER->K_EFF;
+	for (int i = 0; i < group; i++)
+		D_c[i] = D[i];
+
+	for (int i = 0; i < dim; i++)
+	{
+		for (int j = 0; j < group; j++)
+			BETA[i][j] = D[j] / WIDTH[i];
+	}
+
+	for (int i = 0; i < group; i++) {
+		for (int j = 0; j < group; j++) {
+			if (i == j)
+				A[i][j] = R[i];
+			else
+				A[i][j] = -S[i];
+			A[i][j] -= F[j] * x[i] / k;
+		}
+	}
+
+
+	for (int i = 0; i < dim; i++)
+	{
+		for (int j = 0; j < group; j++)
+		{
+			Q[i][0][j] = BETA[i][j] / (1 + 12 * BETA[i][j]);
+			Q[i][1][j] = BETA[i][j] / (1 + 4 * BETA[i][j]);
+			Q[i][2][j] = 8 * BETA[i][j] / ((1 + 12 * BETA[i][j])* (1 + 4 * BETA[i][j]));
+			Q[i][3][j] = (1 - 48 * BETA[i][j]) / ((1 + 12 * BETA[i][j]) * (1 + 4 * BETA[i][j]));
+		}
+	}
+}
+
+void Node::updateTransverseLeakage() {
+	int dim = SOLVER->nDIM;
+	int group = SOLVER->nGROUP;
+
+	for (int u = 0; u < dim; u++)
+	{
+		for (int g = 0; g < group; g++)
+		{
+			DL[u][0][g] = 0.0;
+			for (int i = 0; i < dim; i++) {
+				int v = (u + i) % dim;
+				double node_width = WIDTH[v];
+				DL[u][0][g] += (getSurfaceNetCurrent(v,Right_side,g) - getSurfaceNetCurrent(v, Left_side, g)) / node_width;
+			}
+			Node* l_node = getNEIGHBOR(u, Left_side);
+			Node* r_node = getNEIGHBOR(u, Right_side);
+			double h_c = WIDTH[u];
+			double beta_c = BETA[u][g];
+			double D = D_c[g];
+			double DL0_c = DL[u][0][g];
+			double h_l = l_node->WIDTH[u];
+			double h_r = r_node->WIDTH[u];
+			double beta_l = l_node->BETA[u][g];
+			double beta_r = r_node->BETA[u][g];
+			double DL0_l = l_node->DL[u][0][g];
+			double DL0_r = r_node->DL[u][0][g];
+			double L_l = (DL0_l / h_l + DL0_c / h_c) / (beta_l + beta_c);
+			double L_r = (DL0_c / h_c + DL0_r / h_r) / (beta_c + beta_r);
+
+			DL[u][1][g] = D * (L_r - L_l) / 2.0;
+			DL[u][2][g] = D * (L_r + L_l - 2.0 * DL0_c / D) / 2.0;
+		}
+	}
+}
+
+void Node::makeOneDimensionalFlux() {
+	int dim = SOLVER->nDIM;
+	int group = SOLVER->nGROUP;
+	for (int u = 0; u < dim; u++) {
+		for (int g = 0; g < group; g++) {
+			double flux_l = getSurfaceFlux(u, Left_side, g);
+			double flux_r = getSurfaceFlux(u, Right_side, g);
+			C[u][0][g] = FLUX[g];
+			C[u][1][g] = (flux_r - flux_l) / 2.0;
+			C[u][1][g] = (flux_r + flux_l) / 2.0 - FLUX[g];
+			SRC1[g] = DL[u][1][g];
+			SRC2[g] = DL[u][2][g];
+		}
+		add_product( SRC1, M1[u], C[u][1], group);
+		add_product( SRC2, M2[u], C[u][2], group);
+		GaussianElimination(M3[u], C[u][3], SRC1, group);
+		GaussianElimination(M4[u], C[u][4], SRC2, group);
+	}
+}
+
+void Node::updateAverageFlux() {
+	int dim = SOLVER->nDIM;
+	int group = SOLVER->nGROUP;
+	for (int i = 0; i < group; i++) {
+		for (int j = 0; j < group; j++) 
+			MM[i][j] = A[i][j];
+		SRC[i] = 0.0;
+	}
+
+	for (int u = 0; u < dim; u++) 
+		for (int g = 0; g < group; g++)
+			MM[g][g] += 12.0 * Q[u][0][g] / WIDTH[u];
+
+	for (int u = 0; u < dim; u++) {
+		for (int g = 0; g < group; g++) {
+			double j_in_l = INCOM_CURRENT[u][Left_side][g];
+			double j_in_r = INCOM_CURRENT[u][Right_side][g];
+			double Q4 = 1.0 - Q[u][2][g] - Q[u][3][g];
+			SRC[g] += (2.0 * Q[0][u][g] * C[u][4][g] + Q4 * (j_in_l + j_in_r)) / WIDTH[u];
+		}
+	}
+	GaussianElimination(MM, FLUX, SRC, group);
+}
+
+void Node::updateOutgoingCurrent() {
+	int dim = SOLVER->nDIM;
+	int group = SOLVER->nGROUP;
+	for (int u = 0; u < dim; u++) {
+		for (int g = 0; g < group; g++) {
+			double j_in_l = INCOM_CURRENT[u][Left_side][g];
+			double j_in_r = INCOM_CURRENT[u][Right_side][g];
+			OUT_CURRENT[u][Left_side][g] = Q[u][0][g] * (6 * FLUX[g] - C[u][4][g]) + Q[u][1][g] * C[u][3][g] - Q[u][2][g] * j_in_r + Q[u][3][g] * j_in_l;
+			OUT_CURRENT[u][Right_side][g] = Q[u][0][g] * (6 * FLUX[g] - C[u][4][g]) - Q[u][1][g] * C[u][3][g] - Q[u][2][g] * j_in_l + Q[u][3][g] * j_in_r;
+		}
+	}
+}
+
+void Node::add_product(double* SRC, double* M1, double* C, int group) {
+
+}
+
+void Node::GaussianElimination(double** M3, double* C, double* SRC, int group) {
+
 }

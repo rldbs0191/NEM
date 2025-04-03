@@ -1,7 +1,7 @@
 #include "cx.h"
 #include "solver.h"
 
-CXManage::CXManage() : DIFFUSION(nullptr), REMOVAL(nullptr), SCATTERING(nullptr), FISSION(nullptr) {
+CXManage::CXManage() : DIFFUSION(nullptr), REMOVAL(nullptr), SCATTERING(nullptr), FISSION(nullptr), CHI(nullptr) {
 	nRegion = 0;
 	Group = 0;
 	SOLVER = nullptr;
@@ -13,11 +13,13 @@ CXManage::~CXManage() {
 		delete[] REMOVAL[i];
 		delete[] SCATTERING[i];
 		delete[] FISSION[i];
+		delete[] CHI[i];
 	}
 	delete[] DIFFUSION;
 	delete[] REMOVAL;
 	delete[] SCATTERING;
 	delete[] FISSION;
+	delete[] CHI;
 }
 
 void CXManage::SetSolver(Solver* s){
@@ -39,11 +41,13 @@ void CXManage::ReadCX(istream& ins) {
 			REMOVAL = new double* [nRegion];
 			SCATTERING = new double* [nRegion];
 			FISSION = new double* [nRegion];
+			CHI = new double* [nRegion];
 			for (int i = 0; i < nRegion; ++i) {
 				DIFFUSION[i] = new double[Group]();
 				REMOVAL[i] = new double[Group]();
 				SCATTERING[i] = new double[Group]();
 				FISSION[i] = new double[Group]();
+				CHI[i] = new double[Group]();
 			}
 		}
 		else if (!strcmp(buffer, "GROUP")) {
@@ -86,6 +90,11 @@ void CXManage::ReadCXTable(istream& ins, int groupIndex) {
 				ins >> FISSION[i][groupIndex];
 			}
 		}
+		else if (!strcmp(buffer, "CHI")) {
+			for (int i = 0; i < nRegion; ++i) {
+				ins >> CHI[i][groupIndex];
+			}
+		}
 		else if (!strcmp(buffer, ENDSTR)) {
 			flag = true;
 		}
@@ -102,7 +111,8 @@ void CXManage::SetCoefficient() {
 			DIFFUSION[region],
 			REMOVAL[region],
 			SCATTERING[region],
-			FISSION[region]
+			FISSION[region],
+			CHI[region]
 		);
 	}
 }
@@ -137,6 +147,13 @@ void CXManage::PrintCX() const {
 	for (int i = 0; i < nRegion; i++) {
 		for (int j = 0; j < Group; j++)
 			cout << FISSION[i][j] << " ";
+		cout << "\n";
+	}
+	cout << "\n";
+	cout << "\n[CHI]\n" << "\n";
+	for (int i = 0; i < nRegion; i++) {
+		for (int j = 0; j < Group; j++)
+			cout << CHI[i][j] << " ";
 		cout << "\n";
 	}
 	cout << "\n";

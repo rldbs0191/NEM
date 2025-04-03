@@ -15,7 +15,6 @@ private:
 	int nGROUP;
 	double* WIDTH;
 	double K_EFF=1.0;
-	double* X;
 	CXManage CX;
 	Geometry GEOMETRY;
 public:

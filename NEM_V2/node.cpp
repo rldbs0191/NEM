@@ -136,14 +136,15 @@ Node::~Node() {
 	delete3D(DL, dim, 3);
 }
 
-void Node::SetCrossSection(double* D, double* R, double* S, double* F) {
+void Node::SetCrossSection(double* D, double* R, double* S, double* F, double* CHI) {
 	int group = SOLVER->nGROUP;
 	int dim = SOLVER->nDIM;
-	double* x = SOLVER->X;
 	double k = SOLVER->K_EFF;
-	cout << D[0]<<"\n";
-	for (int i = 0; i < group; i++)
+	for (int i = 0; i < group; i++) {
 		D_c[i] = D[i];
+		SRC[i] = CHI[i] * F[i] / k;
+	}
+		
 
 	for (int i = 0; i < dim; i++)
 	{
@@ -154,7 +155,7 @@ void Node::SetCrossSection(double* D, double* R, double* S, double* F) {
 	for (int i = 0; i < group; ++i) {
 		for (int j = 0; j < group; ++j) {
 			double removal = (i == j) ? R[i] : 0.0;
-			double fission_term = (1.0 / k) * x[i] * F[j];
+			double fission_term = (1.0 / k) * CHI[i] * F[j];
 			double scatter = (i != j) ? S[i] : 0.0;
 
 			A[i][j] = removal -fission_term - scatter;
@@ -176,9 +177,66 @@ void Node::SetCrossSection(double* D, double* R, double* S, double* F) {
 	for (int i = 0; i < dim; i++) {
 		for (int j = 0; j < group; j++) {
 			for (int k = 0; k < group; k++) {
-				M3[i][j][k] = 6.0 * D[j] / (WIDTH[i]*WIDTH[i]) * A[j][k] / 10.0;
-				M4[i][j][k] = 10.0 * D[j] / (WIDTH[i] * WIDTH[i]) * A[j][k] / 14.0;
+				M3[i][j][k] = A[j][k] / 10.0;
+				M4[i][j][k] = A[j][k] / 14.0;
+				if (j == k) {
+					M3[i][j][k] *= 6.0 * D[j] / (WIDTH[i] * WIDTH[i]);
+					M4[i][j][k] *= 10.0 * D[j] / (WIDTH[i] * WIDTH[i]);
+				}
 			}
+		}
+	}
+}
+
+void Node::SetINCOM_CURRENT(int x, int y, int z) {
+	int dim = SOLVER->nDIM;
+	int group = SOLVER->nGROUP;
+	for (int i = 0; i < dim; i++) {
+		for (int j = 0; j < 2; j++) {
+			for (int k = 0; k < group; k++) {
+				if (NEIGHBOR[i][j] != nullptr)
+					INCOM_CURRENT[i][j][k] = NEIGHBOR[i][j]->OUT_CURRENT[i][j][k];
+				else {
+					if (BOUNDARY[i][j] == REFLECTIVE)
+						INCOM_CURRENT[i][j][k] =OUT_CURRENT[i][j][k];
+					else if (BOUNDARY[i][j] == VACUUM)
+						INCOM_CURRENT[i][j][k] = 0.0;
+				}
+			}
+		}
+	}
+}
+
+void Node::SetBOUNDARY(int x, int y, int z) {
+	int dim = SOLVER->nDIM;
+	const auto& structure = SOLVER->GEOMETRY.GetStructure();
+
+	for (int d = 0; d < dim; ++d) {
+		for (int s = 0; s < 2; ++s) {
+			int dx = 0, dy = 0, dz = 0;
+			if (d == 0) dx = (s == 0) ? -1 : 1;
+			if (d == 1) dy = (s == 0) ? -1 : 1;
+			if (d == 2) dz = (s == 0) ? -1 : 1;
+
+			int nx = x + dx;
+			int ny = y + dy;
+			int nz = z + dz;
+
+			BOUNDARY_TYPE bc = REFLECTIVE;  // 기본값
+
+			if (nz >= 0 && nz < static_cast<int>(structure.size())) {
+				const auto& layer = structure[nz];
+				if (ny >= 0 && ny < static_cast<int>(layer.size())) {
+					const auto& row = layer[ny];
+					if (nx >= 0 && nx < static_cast<int>(row.size())) {
+						if (row[nx] == -1) {
+							bc = VACUUM;
+						}
+					}
+				}
+			}
+
+			BOUNDARY[d][s] = bc;
 		}
 	}
 }
@@ -240,7 +298,7 @@ void Node::makeOneDimensionalFlux() {
 			double flux_r = getSurfaceFlux(u, Right_side, g);
 			C[u][0][g] = FLUX[g];
 			C[u][1][g] = (flux_r - flux_l) / 2.0;
-			C[u][1][g] = (flux_r + flux_l) / 2.0 - FLUX[g];
+			C[u][2][g] = (flux_r + flux_l) / 2.0 - FLUX[g];
 			SRC1[g] = DL[u][1][g];
 			SRC2[g] = DL[u][2][g];
 		}
@@ -254,6 +312,7 @@ void Node::makeOneDimensionalFlux() {
 void Node::updateAverageFlux() {
 	int dim = SOLVER->nDIM;
 	int group = SOLVER->nGROUP;
+	double keff = SOLVER->K_EFF;
 	for (int i = 0; i < group; i++) {
 		for (int j = 0; j < group; j++)
 			MM[i][j] = A[i][j];
@@ -309,20 +368,9 @@ void Node::GaussianElimination(double** M_in, double* C, double* SRC, int group)
 	for (int i = 0; i < group; ++i)
 		b[i] = SRC[i];
 
-	cout << "[GaussianEliminationWithA] using A for multiplication\n";
-	for (int i = 0; i < group; ++i) {
-		for (int j = 0; j < group; ++j)
-			cout << "A[" << i << "][" << j << "] = " << A[i][j] << " ";
-		cout << endl;
-	}
-
 	// 2. Forward elimination
 	for (int k = 0; k < group; ++k) {
 		double pivot = M[k][k];
-		if (fabs(pivot) < 1e-12) {
-			cerr << "[WARNING] Zero pivot at M[" << k << "][" << k << "], replacing with ε\n";
-			pivot = 1e-12;
-		}
 
 		for (int i = k + 1; i < group; ++i) {
 			double factor = M[i][k] / pivot;

@@ -5,7 +5,6 @@ Solver::Solver()
 	nDIM = 0;
 	nGROUP = 0;
 	WIDTH = nullptr;
-	X = nullptr;
 	CX = CXManage();
 	GEOMETRY = Geometry();
 }
@@ -44,6 +43,7 @@ void Solver::ReadInput(const char* input)
 	}
 	file.close();
 	CX.SetCoefficient();
+	
 }
 
 void Solver::ReadTitle(istream& ins)
@@ -82,9 +82,6 @@ void Solver::ReadCondition(istream &ins)
 		}
 		else if (!strcmp(buffer, "GROUP_NUM")) {
 			ins >> nGROUP;
-			X = new double[nGROUP];
-			for (int i = 0; i < nGROUP; i++)
-				X[i] = 1.0;
 		}
 		else if (!strcmp(buffer, "WIDTH"))
 		{
@@ -102,21 +99,75 @@ void Solver::Run()
 {
 	cout << "Solver is running..." << endl;
 	const auto& globalNodes = GEOMETRY.GetGlobalNode();
-	int max_iter = 10;
-	for (int iter = 0; iter < max_iter; ++iter) {
-		double k_old = K_EFF;
 
-		// 1. 모든 노드에 대해 업데이트 수행
-		for (auto& entry : globalNodes) {
+	int group = nGROUP;
+	int dim = nDIM;
+	double convCrit = 1e-6;
+	bool converged = false;
+	int iter = 0;
+	double prevKeff, norm, denom, maxErr;
+
+	// 중성자속 저장용
+	map<tuple<int, int, int>, vector<double>> preFlux;
+
+	do {
+		// 1. 이전 중성자속 저장
+		for (const auto& entry : globalNodes) {
+			const auto& coord = entry.first;
+			Node* node = entry.second;
+			vector<double> flux(group);
+			for (int g = 0; g < group; ++g)
+				flux[g] = node->getFLUX(g);
+			preFlux[coord] = flux;
+		}
+
+		prevKeff = K_EFF;
+
+		// 2. 모든 노드 계산
+		for (const auto& entry : globalNodes) {
 			Node* node = entry.second;
 			node->updateTransverseLeakage();
 			node->makeOneDimensionalFlux();
 			node->updateAverageFlux();
 			node->updateOutgoingCurrent();
 		}
-		PrintNodeInfo(0, 0, 0);
-	}
 
+		// 3. keff 계산용: <flux_new, flux_new> / <flux_new, flux_old>
+		norm = 0.0;
+		denom = 0.0;
+		for (const auto& entry : globalNodes) {
+			const auto& coord = entry.first;
+			Node* node = entry.second;
+			for (int g = 0; g < group; ++g) {
+				double valNew = node->getFLUX(g);
+				double valOld = preFlux[coord][g];
+				norm += valNew * valNew;
+				denom += valNew * valOld;
+			}
+		}
+		K_EFF = prevKeff * norm / denom;
+
+		// 4. 수렴 판단
+		maxErr = 0.0;
+		for (const auto& entry : globalNodes) {
+			const auto& coord = entry.first;
+			Node* node = entry.second;
+			for (int g = 0; g < group; ++g) {
+				double diff = abs(node->getFLUX(g) - preFlux[coord][g]);
+				double rel = diff / (preFlux[coord][g] + 1e-12);
+				if (rel > maxErr)
+					maxErr = rel;
+			}
+		}
+
+		cout << "Iteration " << iter + 1 << ": K_EFF = " << K_EFF << ", Error = " << maxErr << endl;
+
+		converged = (maxErr < convCrit);
+		iter++;
+
+	} while (!converged);
+
+	cout << "Final keff = " << K_EFF << ", after " << iter << " iterations.\n";
 }
 
 

@@ -62,8 +62,13 @@ void Geometry::ReadCell(istream& ins)
 		while (ss >> token)
 		{
 			try {
-				int region = stoi(token);
-				row.push_back(region);
+				if (token == ".") {
+					row.push_back(-1); // -1은 외부 영역을 의미
+				}
+				else {
+					int region = stoi(token);
+					row.push_back(region);
+				}
 			}
 			catch (const invalid_argument&) {
 				cerr << "Warning: invalid token in CEL block: " << token << endl;
@@ -149,8 +154,17 @@ void Geometry::ReadStructure(istream& ins)
 								STRUCTURE[globalZ].resize(globalY + 1);
 							if (STRUCTURE[globalZ][globalY].size() <= globalX)
 								STRUCTURE[globalZ][globalY].resize(globalX + 1);
-
 							STRUCTURE[globalZ][globalY][globalX] = templateCell[k][i][j];
+						}
+					}
+				}
+				for (size_t k = 0; k < K; ++k) {
+					for (size_t i = 0; i < I; ++i) {
+						for (size_t j = 0; j < J; ++j) {
+							size_t globalZ = z * K + k;
+							size_t globalY = y * I + i;
+							size_t globalX = x * J + j;
+							if (templateCell[k][i][j] == -1) continue;
 							GLOBAL_NODE[{globalX, globalY, globalZ}] = new Node(templateCell[k][i][j], SOLVER);
 						}
 					}
@@ -159,42 +173,58 @@ void Geometry::ReadStructure(istream& ins)
 			}
 		}
 	}
+	for (const auto& entry : GLOBAL_NODE) {
+		int x = get<0>(entry.first);
+		int y = get<1>(entry.first);
+		int z = get<2>(entry.first);
+		SetNeighbors(x, y, z);
+	}
 
-	SetNeighbors();
+	for (const auto& entry : GLOBAL_NODE) {
+		int x = get<0>(entry.first);
+		int y = get<1>(entry.first);
+		int z = get<2>(entry.first);
+		Node* node = entry.second;
+		node->SetBOUNDARY(x, y, z);
+	}
+
+	for (const auto& entry : GLOBAL_NODE) {
+		int x = get<0>(entry.first);
+		int y = get<1>(entry.first);
+		int z = get<2>(entry.first);
+		Node* node = entry.second;
+		node->SetINCOM_CURRENT(x, y, z);
+	}
+	
 }
 
-void Geometry::SetNeighbors() {
-	for (auto& it : GLOBAL_NODE) {
-		const auto& coord = it.first;
-		Node* node = it.second;
-		int dim = SOLVER->nDIM;
-		int x = std::get<0>(coord);
-		int y = std::get<1>(coord);
-		int z = std::get<2>(coord);
+void Geometry::SetNeighbors(int x, int y, int z) {
+	auto it = GLOBAL_NODE.find({ x, y, z });
+	if (it == GLOBAL_NODE.end()) return;
 
-		if (dim > 0) {
-			auto left = GLOBAL_NODE.find({ x - 1, y, z });
-			node->setNEIGHBOR(X_dir, Left_side, (left != GLOBAL_NODE.end()) ? left->second : nullptr);
+	Node* node = it->second;
+	int dim = SOLVER->nDIM;
 
-			auto right = GLOBAL_NODE.find({ x + 1, y, z });
-			node->setNEIGHBOR(X_dir, Right_side, (right != GLOBAL_NODE.end()) ? right->second : nullptr);
-		}
+	if (dim > 0) {
+		auto left = GLOBAL_NODE.find({ x - 1, y, z });
+		node->setNEIGHBOR(X_dir, Left_side, (left != GLOBAL_NODE.end()) ? left->second : nullptr);
 
-		if (dim > 1) {
-			auto down = GLOBAL_NODE.find({ x, y - 1, z });
-			node->setNEIGHBOR(Y_dir, Left_side, (down != GLOBAL_NODE.end()) ? down->second : nullptr);
+		auto right = GLOBAL_NODE.find({ x + 1, y, z });
+		node->setNEIGHBOR(X_dir, Right_side, (right != GLOBAL_NODE.end()) ? right->second : nullptr);
+	}
+	if (dim > 1) {
+		auto down = GLOBAL_NODE.find({ x, y - 1, z });
+		node->setNEIGHBOR(Y_dir, Left_side, (down != GLOBAL_NODE.end()) ? down->second : nullptr);
 
-			auto up = GLOBAL_NODE.find({ x, y + 1, z });
-			node->setNEIGHBOR(Y_dir, Right_side, (up != GLOBAL_NODE.end()) ? up->second : nullptr);
-		}
+		auto up = GLOBAL_NODE.find({ x, y + 1, z });
+		node->setNEIGHBOR(Y_dir, Right_side, (up != GLOBAL_NODE.end()) ? up->second : nullptr);
+	}
+	if (dim > 2) {
+		auto back = GLOBAL_NODE.find({ x, y, z - 1 });
+		node->setNEIGHBOR(Z_dir, Left_side, (back != GLOBAL_NODE.end()) ? back->second : nullptr);
 
-		if (dim > 2) {
-			auto back = GLOBAL_NODE.find({ x, y, z - 1 });
-			node->setNEIGHBOR(Z_dir, Left_side, (back != GLOBAL_NODE.end()) ? back->second : nullptr);
-
-			auto front = GLOBAL_NODE.find({ x, y, z + 1 });
-			node->setNEIGHBOR(Z_dir, Right_side, (front != GLOBAL_NODE.end()) ? front->second : nullptr);
-		}
+		auto front = GLOBAL_NODE.find({ x, y, z + 1 });
+		node->setNEIGHBOR(Z_dir, Right_side, (front != GLOBAL_NODE.end()) ? front->second : nullptr);
 	}
 }
 
@@ -270,6 +300,21 @@ void Geometry::PrintNodeInfo(int x, int y, int z) const {
 			cout << node->BETA[u][g] << " ";
 	cout << "\n";
 
+	const char* dirName[] = { "X", "Y", "Z" };
+	const char* sideName[] = { "Left", "Right" };
+	for (int d = 0; d < dim; ++d) {
+		for (int s = 0; s < 2; ++s) {
+			cout << "[Boundary] " << dirName[d] << "-" << sideName[s] << " | ";
+			cout << (node->getBOUNDARY(d, s) == VACUUM ? "VACUUM" : "REFLECTIVE");
+
+			Node* neighbor = node->getNEIGHBOR(d, s);
+			if (neighbor)
+				cout << ", Neighbor REGION: " << neighbor->getREGION();
+			else
+				cout << ", No neighbor";
+			cout << "\n";
+		}
+	}
 	cout << "A Matrix:\n";
 	for (int i = 0; i < group; ++i) {
 		for (int j = 0; j < group; ++j) {

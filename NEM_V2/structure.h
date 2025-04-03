@@ -29,8 +29,9 @@ public:
 	void ReadGeometry(istream& ins);
 	void ReadCell(istream& ins);
 	void ReadStructure(istream& ins);
-	void SetNeighbors();
+	void SetNeighbors(int x, int y, int z);	
 	void PrintStructure() const;
+	const Structure& GetStructure() const { return STRUCTURE; }
 	void PrintNodeNeighbors(int x, int y, int z) const;
 	void PrintNodeInfo(int x, int y, int z) const;
 };

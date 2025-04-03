@@ -17,6 +17,7 @@ private:
 	CXArray REMOVAL;
 	CXArray SCATTERING;	
 	CXArray FISSION;
+	CXArray CHI;
 	Solver* SOLVER;
 public:
 	CXManage();

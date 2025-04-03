@@ -40,7 +40,9 @@ public:
     double*** getQ() { return Q; }
     double*** getC() { return C; }
     double*** getOUT_CURRENT() { return OUT_CURRENT; }
-    void SetCrossSection(double* D, double* R, double* S, double* F);
+    void SetCrossSection(double* D, double* R, double* S, double* F, double* CHI);
+    void SetINCOM_CURRENT(int x, int y, int z);
+    void SetBOUNDARY(int x, int y, int z);
 
     double getSurfaceNetCurrent(int dim, int side, int group) { return (1 - side) * (INCOM_CURRENT[dim][side][group] - OUT_CURRENT[dim][side][group]) + 
         side * (OUT_CURRENT[dim][side][group] - INCOM_CURRENT[dim][side][group]); }

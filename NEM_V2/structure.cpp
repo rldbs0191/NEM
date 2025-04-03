@@ -282,16 +282,21 @@ void Geometry::PrintNodeInfo(int x, int y, int z) const {
 	int dim = SOLVER->nDIM;
 
 	cout << "===== Node (" << x << ", " << y << ", " << z << ") =====\n";
-	cout << "REGION: " << node->getREGION() << "\n";
+	cout << "REGION: " << node->REGION << "\n";
 
 	cout << "WIDTH: ";
 	for (int d = 0; d < dim; ++d)
-		cout << node->getWIDTH(d) << " ";
+		cout << node->WIDTH[d] << " ";
 	cout << "\n";
 	cout << scientific << setprecision(2);
 	cout << "FLUX: ";
 	for (int g = 0; g < group; ++g)
-		cout << node->getFLUX(g) << " ";
+		cout << node->FLUX[g] << " ";
+	cout << "\n";
+
+	cout << "D: ";
+	for (int g = 0; g < group; ++g)
+		cout << node->D_c[g] << " ";
 	cout << "\n";
 
 	cout << "BETA: ";
@@ -328,6 +333,37 @@ void Geometry::PrintNodeInfo(int x, int y, int z) const {
 		for (int j = 0; j < 4; ++j) {
 			for (int k = 0; k < group; k++)
 				cout << node->Q[i][j][k] << " ";
+			cout << "\n";
+		}
+		cout << "\n";
+	}
+
+	cout << "C Matrix:\n";
+	for (int i = 0; i < dim; i++) {
+		for (int j = 0; j < 5; j++) {
+			for (int k = 0; k < group; k++) {
+				cout<<node->C[i][j][k] << " ";
+			}
+			cout << "\n";
+		}
+		cout << "\n";
+	}
+
+	cout << "out_current:\n";
+	for (int i = 0; i < dim; ++i) {
+		for (int j = 0; j < 2; ++j) {
+			for (int k = 0; k < group; k++)
+				cout << node->OUT_CURRENT[i][j][k] << " ";
+			cout << "\n";
+		}
+		cout << "\n";
+	}
+
+	cout << "incom_current:\n";
+	for (int i = 0; i < dim; ++i) {
+		for (int j = 0; j < 2; ++j) {
+			for (int k = 0; k < group; k++)
+				cout << node->INCOM_CURRENT[i][j][k] << " ";
 			cout << "\n";
 		}
 		cout << "\n";

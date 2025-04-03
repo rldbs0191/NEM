@@ -125,11 +125,23 @@ void Solver::Run()
 
 		// 2. 모든 노드 계산
 		for (const auto& entry : globalNodes) {
+			int x = get<0>(entry.first);
+			int y = get<1>(entry.first);
+			int z = get<2>(entry.first);
 			Node* node = entry.second;
+			int region = node->getREGION()-1;
+			node->SetINCOM_CURRENT(x, y, z);
+			node->SetCrossSection(CX.DIFFUSION[region],
+				CX.REMOVAL[region],
+				CX.SCATTERING[region],
+				CX.FISSION[region],
+				CX.CHI[region]);
 			node->updateTransverseLeakage();
 			node->makeOneDimensionalFlux();
 			node->updateAverageFlux();
 			node->updateOutgoingCurrent();
+			
+		//	PrintNodeInfo(x, y, z);
 		}
 
 		// 3. keff 계산용: <flux_new, flux_new> / <flux_new, flux_old>
@@ -154,7 +166,7 @@ void Solver::Run()
 			Node* node = entry.second;
 			for (int g = 0; g < group; ++g) {
 				double diff = abs(node->getFLUX(g) - preFlux[coord][g]);
-				double rel = diff / (preFlux[coord][g] + 1e-12);
+				double rel = diff / preFlux[coord][g];
 				if (rel > maxErr)
 					maxErr = rel;
 			}

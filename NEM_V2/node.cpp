@@ -142,7 +142,7 @@ void Node::SetCrossSection(double* D, double* R, double* S, double* F, double* C
 	double k = SOLVER->K_EFF;
 	for (int i = 0; i < group; i++) {
 		D_c[i] = D[i];
-		SRC[i] = CHI[i] * F[i] / k;
+		SRC[i] = CHI[i] * ( F[0]*FLUX[0] + F[1]*FLUX[1]);
 	}
 		
 
@@ -170,7 +170,7 @@ void Node::SetCrossSection(double* D, double* R, double* S, double* F, double* C
 			Q[i][0][j] = BETA[i][j] / (1 + 12 * BETA[i][j]);
 			Q[i][1][j] = BETA[i][j] / (1 + 4 * BETA[i][j]);
 			Q[i][2][j] = 8 * BETA[i][j] / ((1 + 12 * BETA[i][j]) * (1 + 4 * BETA[i][j]));
-			Q[i][3][j] = (1 - 48 * BETA[i][j]) / ((1 + 12 * BETA[i][j]) * (1 + 4 * BETA[i][j]));
+			Q[i][3][j] = (1 - 48 * BETA[i][j]* BETA[i][j]) / ((1 + 12 * BETA[i][j]) * (1 + 4 * BETA[i][j]));
 		}
 	}
 
@@ -357,40 +357,57 @@ void Node::add_product(double* SRC, double* M, double* C, int group) {
 }
 
 void Node::GaussianElimination(double** M_in, double* C, double* SRC, int group) {
-	double** M = new double* [group];
+	// LU decomposition without pivoting
+	double** L = new double* [group];
+	double** U = new double* [group];
 	for (int i = 0; i < group; ++i) {
-		M[i] = new double[group];
-		for (int j = 0; j < group; ++j)
-			M[i][j] = M_in[i][j];
+		L[i] = new double[group] {};
+		U[i] = new double[group] {};
 	}
 
-	double* b = new double[group];
-	for (int i = 0; i < group; ++i)
-		b[i] = SRC[i];
-
-	// 2. Forward elimination
-	for (int k = 0; k < group; ++k) {
-		double pivot = M[k][k];
-
-		for (int i = k + 1; i < group; ++i) {
-			double factor = M[i][k] / pivot;
-			for (int j = k; j < group; ++j)
-				M[i][j] -= factor * M[k][j];
-			b[i] -= factor * b[k];
+	// Copy M_in into U for decomposition
+	for (int i = 0; i < group; ++i) {
+		for (int j = 0; j < group; ++j) {
+			U[i][j] = M_in[i][j];
 		}
 	}
 
-	// 3. Back substitution
-	for (int i = group - 1; i >= 0; --i) {
-		double sum = b[i];
-		for (int j = i + 1; j < group; ++j)
-			sum -= M[i][j] * C[j];
-		C[i] = sum / M[i][i];
+	for (int i = 0; i < group; ++i) {
+		L[i][i] = 1.0;
+		for (int j = i + 1; j < group; ++j) {
+			double factor = U[j][i] / U[i][i];
+			L[j][i] = factor;
+			for (int k = i; k < group; ++k) {
+				U[j][k] -= factor * U[i][k];
+			}
+		}
 	}
 
-	// 4. 메모리 해제
-	for (int i = 0; i < group; ++i)
-		delete[] M[i];
-	delete[] M;
-	delete[] b;
+	// Solve L*y = SRC using forward substitution
+	double* y = new double[group];
+	for (int i = 0; i < group; ++i) {
+		y[i] = SRC[i];
+		for (int j = 0; j < i; ++j) {
+			y[i] -= L[i][j] * y[j];
+		}
+	}
+
+	// Solve U*x = y using back substitution
+	for (int i = group - 1; i >= 0; --i) {
+		C[i] = y[i];
+		for (int j = i + 1; j < group; ++j) {
+			C[i] -= U[i][j] * C[j];
+		}
+		C[i] /= U[i][i];
+	}
+
+	// 메모리 해제
+	for (int i = 0; i < group; ++i) {
+		delete[] L[i];
+		delete[] U[i];
+	}
+	delete[] L;
+	delete[] U;
+	delete[] y;
 }
+

@@ -288,7 +288,7 @@ void Geometry::PrintNodeInfo(int x, int y, int z) const {
 	for (int d = 0; d < dim; ++d)
 		cout << node->WIDTH[d] << " ";
 	cout << "\n";
-	cout << scientific << setprecision(2);
+	cout << scientific << setprecision(5);
 	cout << "FLUX: ";
 	for (int g = 0; g < group; ++g)
 		cout << node->FLUX[g] << " ";

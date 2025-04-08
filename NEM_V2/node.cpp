@@ -12,10 +12,10 @@ Node::Node(int region, Solver* solver) {
 		WIDTH[i] = solver->WIDTH[i];
 	FLUX = new double[group] {};
 	for (int i = 0; i < group; i++)
-		FLUX[i] = 1.0;
+		FLUX[i] = 0.0625;
 	old_FLUX = new double[group] {};
 	for (int i = 0; i < group; i++)
-		old_FLUX[i] = 1.0;
+		old_FLUX[i] = 0.0625;
 	D_c = new double[group]();
 	BETA = new double* [dim];
 	for (int i = 0; i < dim; i++)
@@ -143,7 +143,7 @@ void Node::SetCrossSection(double* D, double* R, double* S, double* F, double* C
 	for (int i = 0; i < group; i++) {
 		D_c[i] = D[i];
 	}
-		
+
 
 	for (int i = 0; i < dim; i++)
 	{
@@ -154,10 +154,10 @@ void Node::SetCrossSection(double* D, double* R, double* S, double* F, double* C
 	for (int i = 0; i < group; ++i) {
 		for (int j = 0; j < group; ++j) {
 			double removal = (i == j) ? R[i] : 0.0;
-			double fission = (1.0 / k) * CHI[i] * F[j]*NU;
-			double scatter = pow(-1, i)*S[j];
+			double fission = (1.0 / k) * CHI[i] * F[j] * NU;
+			double scatter = pow(-1, i) * S[j];
 
-			A[i][j] = removal -fission + scatter;
+			A[i][j] = removal - fission + scatter;
 		}
 	}
 
@@ -169,7 +169,7 @@ void Node::SetCrossSection(double* D, double* R, double* S, double* F, double* C
 			Q[i][0][j] = BETA[i][j] / (1 + 12 * BETA[i][j]);
 			Q[i][1][j] = BETA[i][j] / (1 + 4 * BETA[i][j]);
 			Q[i][2][j] = 8 * BETA[i][j] / ((1 + 12 * BETA[i][j]) * (1 + 4 * BETA[i][j]));
-			Q[i][3][j] = (1 - 48 * BETA[i][j]* BETA[i][j]) / ((1 + 12 * BETA[i][j]) * (1 + 4 * BETA[i][j]));
+			Q[i][3][j] = (1 - 48 * BETA[i][j] * BETA[i][j]) / ((1 + 12 * BETA[i][j]) * (1 + 4 * BETA[i][j]));
 		}
 	}
 
@@ -197,7 +197,7 @@ void Node::SetINCOM_CURRENT(int x, int y, int z) {
 					INCOM_CURRENT[i][j][k] = NEIGHBOR[i][j]->OUT_CURRENT[i][j][k];
 				else {
 					if (BOUNDARY[i][j] == REFLECTIVE)
-						INCOM_CURRENT[i][j][k] =OUT_CURRENT[i][j][k];
+						INCOM_CURRENT[i][j][k] = OUT_CURRENT[i][j][k];
 					else if (BOUNDARY[i][j] == VACUUM)
 						INCOM_CURRENT[i][j][k] = 0.0;
 				}
@@ -252,40 +252,58 @@ void Node::updateTransverseLeakage() {
 			for (int i = 0; i < dim; i++) {
 				int v = (u + i) % dim;
 				double node_width = WIDTH[v];
-				DL[u][0][g] += (getSurfaceNetCurrent(v, Right_side, g) - getSurfaceNetCurrent(v, Left_side, g)) / node_width;
+				DL[u][0][g] += (OUT_CURRENT[v][Right_side][g] + OUT_CURRENT[v][Left_side][g] - INCOM_CURRENT[v][Right_side][g] - INCOM_CURRENT[v][Left_side][g]) / node_width;//(getSurfaceNetCurrent(v, Right_side, g) - getSurfaceNetCurrent(v, Left_side, g)) / node_width;
 			}
 			Node* l_node = getNEIGHBOR(u, Left_side);
 			Node* r_node = getNEIGHBOR(u, Right_side);
+			double L_l = 0.0;
+			double L_r = 0.0;
 			double h_c = WIDTH[u];
 			double beta_c = BETA[u][g];
 			double D = D_c[g];
 			double DL0_c = DL[u][0][g];
-			double h_l = 1.0;
-			double h_r = 1.0;
-			double beta_l = 0.0;
-			double beta_r = 0.0;
-			double DL0_l = 0.0;
-			double DL0_r = 0.0;
-			if (l_node != nullptr)
+
+			if (l_node)
 			{
-				h_l = l_node->WIDTH[u];
-				beta_l = l_node->BETA[u][g];
-				DL0_l = l_node->DL[u][0][g];
+				double h_l = l_node->WIDTH[u];
+				double beta_l = l_node->BETA[u][g];
+				double DL0_l = l_node->DL[u][0][g];
+				L_l = (DL0_l * beta_l + DL0_c * beta_c) / (beta_l + beta_c);
+			}
+			else
+			{
+				if (BOUNDARY[u][Left_side] == REFLECTIVE)
+					L_l = DL0_c;
+				else if (BOUNDARY[u][Left_side] == VACUUM)
+					L_l = DL0_c/2;
 			}
 
-			if (r_node != nullptr)
+			if (r_node)
 			{
-				h_r = r_node->WIDTH[u];
-				beta_r = r_node->BETA[u][g];
-				DL0_r = r_node->DL[u][0][g];
+				double h_r = r_node->WIDTH[u];
+				double beta_r = r_node->BETA[u][g];
+				double DL0_r = r_node->DL[u][0][g];
+				L_r = (DL0_c * beta_c + DL0_r * beta_r) / (beta_c + beta_r);
 			}
-			double L_l = (DL0_l / h_l + DL0_c / h_c) / (beta_l + beta_c);
-			double L_r = (DL0_c / h_c + DL0_r / h_r) / (beta_c + beta_r);
+			else
+			{
+				if (BOUNDARY[u][Right_side] == REFLECTIVE)
+					L_r = DL0_c;
+				else if (BOUNDARY[u][Right_side] == VACUUM)
+					L_r = DL0_c / 2;
+			}
+			
+			
 
-			DL[u][1][g] = D * (L_r - L_l) / 2.0;
-			DL[u][2][g] = D * (L_r + L_l - 2.0 * DL0_c / D) / 2.0;
+			DL[u][1][g] = (L_r - L_l) / 2.0;
+			DL[u][2][g] = (L_r + L_l - 2.0 * DL0_c) / 2.0;
+			cout << scientific << setprecision(5);
+			cout << " DL[" << u << "][" << 0 << "][" << g << "] = " << DL[u][0][g] << " ";
+			cout << " DL[" << u << "][" << 1 << "][" << g << "] = " << DL[u][1][g] << " ";
+			cout << " DL[" << u << "][" << 2 << "][" << g << "] = " << DL[u][2][g] << "\n";
 		}
 	}
+	cout << "\n";
 }
 
 void Node::makeOneDimensionalFlux() {
@@ -296,8 +314,8 @@ void Node::makeOneDimensionalFlux() {
 			double flux_l = getSurfaceFlux(u, Left_side, g);
 			double flux_r = getSurfaceFlux(u, Right_side, g);
 			C[u][0][g] = FLUX[g];
-			C[u][1][g] = (flux_r - flux_l) / 2.0;
-			C[u][2][g] = (flux_r + flux_l) / 2.0 - FLUX[g];
+			C[u][1][g] = (OUT_CURRENT[u][Right_side][g] + INCOM_CURRENT[u][Right_side][g]) - (OUT_CURRENT[u][Left_side][g] + INCOM_CURRENT[u][Left_side][g]);//(flux_r - flux_l) / 2.0;
+			C[u][2][g] = (OUT_CURRENT[u][Right_side][g] + INCOM_CURRENT[u][Right_side][g]) + (OUT_CURRENT[u][Left_side][g] + INCOM_CURRENT[u][Left_side][g]) - FLUX[g];//(flux_r + flux_l) / 2.0 - FLUX[g];
 			SRC1[g] = DL[u][1][g];
 			SRC2[g] = DL[u][2][g];
 		}

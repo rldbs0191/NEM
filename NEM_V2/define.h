@@ -11,7 +11,7 @@
 
 using namespace std;  
 
-#define NU 2.34;
+#define NU 1.0;
 #define LINE_LEN 100  
 
 #define X_dir 0  

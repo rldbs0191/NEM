@@ -45,8 +45,7 @@ public:
     void SetINCOM_CURRENT(int x, int y, int z);
     void SetBOUNDARY(int x, int y, int z);
 
-    double getSurfaceNetCurrent(int dim, int side, int group) { return (1 - side) * (INCOM_CURRENT[dim][side][group] - OUT_CURRENT[dim][side][group]) + 
-        side * (OUT_CURRENT[dim][side][group] - INCOM_CURRENT[dim][side][group]); }
+    double getSurfaceNetCurrent(int dim, int side, int group) { return OUT_CURRENT[dim][side][group] - INCOM_CURRENT[dim][side][group]; }
     double getSurfaceFlux(int dim, int side, int group) { return 2*(INCOM_CURRENT[dim][side][group]+OUT_CURRENT[dim][side][group]); }
 
     void add_product(double* SRC, double* M1, double* C, int group);

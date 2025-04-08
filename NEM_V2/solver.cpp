@@ -143,6 +143,10 @@ void Solver::Run()
 		//	PrintNodeInfo(x, y, z);
 		}
 
+		for (const auto& entry : globalNodes) {
+
+		}
+
 		// 3. keff 계산용: <flux_new, flux_new> / <flux_new, flux_old>
 		norm = 0.0;
 		denom = 0.0;

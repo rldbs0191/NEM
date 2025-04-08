@@ -129,12 +129,14 @@ void Solver::Run()
 			int z = get<2>(entry.first);
 			Node* node = entry.second;
 			int region = node->getREGION()-1;
+			
 			node->SetINCOM_CURRENT(x, y, z);
 			node->SetCrossSection(CX.DIFFUSION[region],
 				CX.REMOVAL[region],
 				CX.SCATTERING[region],
 				CX.FISSION[region],
 				CX.CHI[region]);
+			cout << scientific << setprecision(5);
 			node->updateTransverseLeakage();
 			node->makeOneDimensionalFlux();
 			node->updateAverageFlux();

@@ -243,6 +243,8 @@ void Node::SetBOUNDARY(int x, int y, int z) {
 void Node::updateTransverseLeakage() {
 	int dim = SOLVER->nDIM;
 	int group = SOLVER->nGROUP;
+	ofstream debugFile("debug.txt", ios::app);
+	debugFile << scientific << setprecision(5);
 
 	for (int u = 0; u < dim; u++)
 	{
@@ -275,7 +277,7 @@ void Node::updateTransverseLeakage() {
 				if (BOUNDARY[u][Left_side] == REFLECTIVE)
 					L_l = DL0_c;
 				else if (BOUNDARY[u][Left_side] == VACUUM)
-					L_l = DL0_c/2;
+					L_l = DL0_c / 2;
 			}
 
 			if (r_node)
@@ -292,30 +294,35 @@ void Node::updateTransverseLeakage() {
 				else if (BOUNDARY[u][Right_side] == VACUUM)
 					L_r = DL0_c / 2;
 			}
-			
-			
 
-			DL[u][1][g] = (L_r - L_l) / 2.0;
-			DL[u][2][g] = (L_r + L_l - 2.0 * DL0_c) / 2.0;
-			cout << scientific << setprecision(5);
-			cout << " DL[" << u << "][" << 0 << "][" << g << "] = " << DL[u][0][g] << " ";
-			cout << " DL[" << u << "][" << 1 << "][" << g << "] = " << DL[u][1][g] << " ";
-			cout << " DL[" << u << "][" << 2 << "][" << g << "] = " << DL[u][2][g] << "\n";
+			DL[u][1][g] = D * (L_r - L_l) / 2.0;
+			DL[u][2][g] = D * (L_r + L_l - 2.0 * DL0_c) / 2.0;
 		}
 	}
-	cout << "\n";
+	debugFile << "DL\n";
+	for (int u = 0; u < dim; u++) {
+		for (int g = 0; g < group; g++) {
+			debugFile << DL[u][0][g] << " ";
+			debugFile << DL[u][1][g]/D_c[g] << " ";
+			debugFile << DL[u][2][g]/D_c[g] << endl;
+		}
+	}
+	debugFile << "\n";
+	debugFile.close();
 }
 
 void Node::makeOneDimensionalFlux() {
 	int dim = SOLVER->nDIM;
 	int group = SOLVER->nGROUP;
+	ofstream debugFile("debug.txt", ios::app);
+	debugFile << scientific << setprecision(5);
 	for (int u = 0; u < dim; u++) {
 		for (int g = 0; g < group; g++) {
 			double flux_l = getSurfaceFlux(u, Left_side, g);
 			double flux_r = getSurfaceFlux(u, Right_side, g);
 			C[u][0][g] = FLUX[g];
-			C[u][1][g] = (OUT_CURRENT[u][Right_side][g] + INCOM_CURRENT[u][Right_side][g]) - (OUT_CURRENT[u][Left_side][g] + INCOM_CURRENT[u][Left_side][g]);//(flux_r - flux_l) / 2.0;
-			C[u][2][g] = (OUT_CURRENT[u][Right_side][g] + INCOM_CURRENT[u][Right_side][g]) + (OUT_CURRENT[u][Left_side][g] + INCOM_CURRENT[u][Left_side][g]) - FLUX[g];//(flux_r + flux_l) / 2.0 - FLUX[g];
+			C[u][1][g] = (flux_r - flux_l) / 2.0;
+			C[u][2][g] = (flux_r + flux_l) / 2.0 - FLUX[g];
 			SRC1[g] = DL[u][1][g];
 			SRC2[g] = DL[u][2][g];
 		}
@@ -323,7 +330,20 @@ void Node::makeOneDimensionalFlux() {
 		add_product(SRC2, M2[u], C[u][2], group);
 		GaussianElimination(M3[u], C[u][3], SRC1, group);
 		GaussianElimination(M4[u], C[u][4], SRC2, group);
+		
 	}
+	debugFile << "C\n";
+	for (int u = 0; u < dim; u++) {
+		for (int g = 0; g < group; g++) {
+			debugFile << C[u][0][g] << " ";
+			debugFile << C[u][1][g] << " ";
+			debugFile << C[u][2][g] << " ";
+			debugFile << C[u][3][g] << " ";
+			debugFile << C[u][4][g] << endl;
+		}
+	}
+	debugFile << "\n";
+	debugFile.close();
 }
 
 void Node::updateAverageFlux() {

@@ -12,10 +12,10 @@ Node::Node(int region, Solver* solver) {
 		WIDTH[i] = solver->WIDTH[i];
 	FLUX = new double[group] {};
 	for (int i = 0; i < group; i++)
-		FLUX[i] = 0.0625;
+		FLUX[i] = 0.25;
 	old_FLUX = new double[group] {};
 	for (int i = 0; i < group; i++)
-		old_FLUX[i] = 0.0625;
+		old_FLUX[i] = 0.25;
 	D_c = new double[group]();
 	BETA = new double* [dim];
 	for (int i = 0; i < dim; i++)
@@ -179,8 +179,8 @@ void Node::SetCrossSection(double* D, double* R, double* S, double* F, double* C
 				M3[i][j][k] = A[j][k] / 10.0;
 				M4[i][j][k] = A[j][k] / 14.0;
 				if (j == k) {
-					M3[i][j][k] *= 6.0 * D[j] / (WIDTH[i] * WIDTH[i]);
-					M4[i][j][k] *= 10.0 * D[j] / (WIDTH[i] * WIDTH[i]);
+					M3[i][j][k] += 6.0 * D[j] / (WIDTH[i] * WIDTH[i]);
+					M4[i][j][k] += 10.0 * D[j] / (WIDTH[i] * WIDTH[i]);
 				}
 			}
 		}
@@ -246,6 +246,15 @@ void Node::updateTransverseLeakage() {
 	ofstream debugFile("debug.txt", ios::app);
 	debugFile << scientific << setprecision(5);
 
+	debugFile << "A" << "\n";
+	for (int i = 0; i < group; i++) {
+		for (int j = 0; j < group; j++) {
+			debugFile << A[i][j] << " ";
+		}
+		debugFile << endl;
+	}
+	debugFile << "\n";
+
 	for (int u = 0; u < dim; u++)
 	{
 		for (int g = 0; g < group; g++)
@@ -299,7 +308,7 @@ void Node::updateTransverseLeakage() {
 			DL[u][2][g] = D * (L_r + L_l - 2.0 * DL0_c) / 2.0;
 		}
 	}
-	debugFile << "DL\n";
+	debugFile << "K\n";
 	for (int u = 0; u < dim; u++) {
 		for (int g = 0; g < group; g++) {
 			debugFile << DL[u][0][g] << " ";

@@ -48,20 +48,19 @@ void Solver::ReadInput(const char* input)
 
 void Solver::ReadTitle(istream& ins)
 {
-	char oneChar, buffer[LINE_LEN];
+	char OneChar, buffer[LINE_LEN];
 	bool flag = false;
-	ins >> oneChar;
+	cout << "Title: ";
+	ins >> OneChar;
 	while (flag == false)
 	{
 		ins >> buffer;
-		if (!strcmp(buffer, "TITLE"))
-		{
-			string line;
-			getline(ins, line);
-			cout << "Title: " << line << endl;
-		}
-		else if (!strcmp(buffer, ENDSTR))
+		string line;
+		getline(ins, line);
+		if (!strcmp(buffer, ENDSTR))
 			flag = true;
+		else
+			cout << buffer << line << "\n";
 	}
 }
 
@@ -158,6 +157,12 @@ void Solver::Run()
 			}
 		}
 		K_EFF = prevKeff * norm / denom;
+		for (const auto& entry : globalNodes) {
+			Node* node = entry.second;
+			for (int g = 0; g < group; ++g) {
+				node->setFLUX(g, node->getFLUX(g)/K_EFF);
+			}
+		}
 
 		// 4. 수렴 판단
 		maxErr = 0.0;

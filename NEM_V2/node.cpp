@@ -142,7 +142,6 @@ void Node::SetCrossSection(double* D, double* R, double* S, double* F, double* C
 	double k = SOLVER->K_EFF;
 	for (int i = 0; i < group; i++) {
 		D_c[i] = D[i];
-		SRC[i] = CHI[i] * ( F[0]*FLUX[0] + F[1]*FLUX[1]);
 	}
 		
 
@@ -155,10 +154,10 @@ void Node::SetCrossSection(double* D, double* R, double* S, double* F, double* C
 	for (int i = 0; i < group; ++i) {
 		for (int j = 0; j < group; ++j) {
 			double removal = (i == j) ? R[i] : 0.0;
-			double fission_term = (1.0 / k) * CHI[i] * F[j];
-			double scatter = (i != j) ? S[i] : 0.0;
+			double fission = (1.0 / k) * CHI[i] * F[j]*NU;
+			double scatter = pow(-1, i)*S[j];
 
-			A[i][j] = removal -fission_term - scatter;
+			A[i][j] = removal -fission + scatter;
 		}
 	}
 
@@ -328,7 +327,7 @@ void Node::updateAverageFlux() {
 			double j_in_l = INCOM_CURRENT[u][Left_side][g];
 			double j_in_r = INCOM_CURRENT[u][Right_side][g];
 			double Q4 = 1.0 - Q[u][2][g] - Q[u][3][g];
-			SRC[g] += (2.0 * Q[0][u][g] * C[u][4][g] + Q4 * (j_in_l + j_in_r)) / WIDTH[u];
+			SRC[g] += (2.0 * Q[u][0][g] * C[u][4][g] + Q4 * (j_in_l + j_in_r)) / WIDTH[u];
 		}
 	}
 	GaussianElimination(MM, FLUX, SRC, group);

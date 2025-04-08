@@ -7,9 +7,11 @@
 #include <string>  
 #include <iomanip>  
 #include <vector>
+#include <cmath>
 
 using namespace std;  
 
+#define NU 2.34;
 #define LINE_LEN 100  
 
 #define X_dir 0  

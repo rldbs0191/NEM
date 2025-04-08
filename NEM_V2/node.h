@@ -34,6 +34,7 @@ public:
     void SetSolver(Solver* s) { SOLVER = s; }
     const double getWIDTH(int dir) { return WIDTH[dir]; }
     const double getFLUX(int group) { return FLUX[group]; }
+	void setFLUX(int group, double flux) { FLUX[group] = flux; }
     Node* getNEIGHBOR(int dir, int side ) const { return NEIGHBOR[dir][side]; }
     void setNEIGHBOR(int dir, int side, Node* node) { NEIGHBOR[dir][side] = node; }
 	const BOUNDARY_TYPE getBOUNDARY(int dir, int side) { return BOUNDARY[dir][side]; }

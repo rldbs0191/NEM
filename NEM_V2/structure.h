@@ -38,7 +38,11 @@ public:
 		int totalNodes = 0;
 		for (const auto& layer : STRUCTURE) {
 			for (const auto& row : layer) {
-				totalNodes += static_cast<int>(row.size());
+				for (const auto& value : row) {
+					if (value != 0 && value != -1) {
+						totalNodes++;
+					}
+				}
 			}
 		}
 		return totalNodes;

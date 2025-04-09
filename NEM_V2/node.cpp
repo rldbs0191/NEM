@@ -264,7 +264,7 @@ void Node::updateTransverseLeakage() {
 				int v = (u + i) % dim;
 				double node_width = WIDTH[v];
 				if (v != i)
-					DL[u][0][g] += (getSurfaceNetCurrent(v, Right_side, g) + getSurfaceNetCurrent(v, Left_side, g)) / node_width;
+					DL[u][0][g] += (getSurfaceNetCurrent(v, Right_side, g) + getSurfaceNetCurrent(v, Left_side, g)) / node_width / D_c[g];
 				else
 					DL[u][0][g] += 0.0;
 			}
@@ -324,8 +324,8 @@ void Node::makeOneDimensionalFlux() {
 			C[u][0][g] = FLUX[g];
 			C[u][1][g] = flux_r - flux_l;
 			C[u][2][g] = flux_r + flux_l - FLUX[g];
-			SRC1[g] = DL[u][1][g];
-			SRC2[g] = DL[u][2][g];
+			SRC1[g] = DL[u][1][g] * D_c[g];
+			SRC2[g] = DL[u][2][g] * D_c[g];
 		}
 		add_product(SRC1, M1[u], C[u][1], group);
 		add_product(SRC2, M2[u], C[u][2], group);

@@ -240,6 +240,8 @@ void Node::SetBOUNDARY(int x, int y, int z) {
 						if (row[nx] == -1) {
 							bc = VACUUM;
 						}
+						else
+							bc = REFLECTIVE;
 					}
 				}
 			}
@@ -252,17 +254,6 @@ void Node::SetBOUNDARY(int x, int y, int z) {
 void Node::updateTransverseLeakage() {
 	int dim = SOLVER->nDIM;
 	int group = SOLVER->nGROUP;
-	ofstream debugFile("debug.txt", ios::app);
-	debugFile << scientific << setprecision(5);
-
-	debugFile << "A" << "\n";
-	for (int i = 0; i < group; i++) {
-		for (int j = 0; j < group; j++) {
-			debugFile << A[i][j] << " ";
-		}
-		debugFile << endl;
-	}
-	debugFile << "\n";
 
 	for (int u = 0; u < dim; u++)
 	{
@@ -320,23 +311,12 @@ void Node::updateTransverseLeakage() {
 			DL[u][2][g] = D * (L_r + L_l - 2.0 * DL0_c) / 2.0;
 		}
 	}
-	debugFile << "K\n";
-	for (int u = 0; u < dim; u++) {
-		for (int g = 0; g < group; g++) {
-			debugFile << DL[u][0][g]/D_c[g] << " ";
-			debugFile << DL[u][1][g]/D_c[g] << " ";
-			debugFile << DL[u][2][g]/D_c[g] << endl;
-		}
-	}
-	debugFile << "\n";
-	debugFile.close();
 }
 
 void Node::makeOneDimensionalFlux() {
 	int dim = SOLVER->nDIM;
 	int group = SOLVER->nGROUP;
-	ofstream debugFile("debug.txt", ios::app);
-	debugFile << scientific << setprecision(5);
+
 	for (int u = 0; u < dim; u++) {
 		for (int g = 0; g < group; g++) {
 			double flux_l = getSurfaceFlux(u, Left_side, g);
@@ -353,26 +333,12 @@ void Node::makeOneDimensionalFlux() {
 		GaussianElimination(M4[u], C[u][4], M2[u], group);
 		
 	}
-	debugFile << "C\n";
-	for (int u = 0; u < dim; u++) {
-		for (int g = 0; g < group; g++) {
-			debugFile << C[u][0][g] << " ";
-			debugFile << C[u][1][g] << " ";
-			debugFile << C[u][2][g] << " ";
-			debugFile << C[u][3][g] << " ";
-			debugFile << C[u][4][g] << endl;
-		}
-	}
-	debugFile << "\n";
-	debugFile.close();
 }
 
 void Node::updateAverageFlux() {
 	int dim = SOLVER->nDIM;
 	int group = SOLVER->nGROUP;
 	double keff = SOLVER->K_EFF;
-	ofstream debugFile("debug.txt", ios::app);
-	debugFile << scientific << setprecision(5);
 	for (int i = 0; i < group; i++) {
 		for (int j = 0; j < group; j++)
 			MM[i][j] = A[i][j];
@@ -396,21 +362,11 @@ void Node::updateAverageFlux() {
 	GaussianElimination(MM, FLUX, SRC, group);
 	for (int i = 0; i < group; i++)
 		old_FLUX[i] = FLUX[i];
-
-	debugFile << "FLUX\n";
-	for (int i = 0; i < group; i++)
-	{
-		debugFile << FLUX[i] << " ";
-	}
-	debugFile << "\n\n";
-	debugFile.close();
 }
 
 void Node::updateOutgoingCurrent() {
 	int dim = SOLVER->nDIM;
 	int group = SOLVER->nGROUP;
-	ofstream debugFile("debug.txt", ios::app);
-	debugFile << scientific << setprecision(5);
 	for (int u = 0; u < dim; u++) {
 		for (int g = 0; g < group; g++) {
 			double j_in_l = INCOM_CURRENT[u][Left_side][g];
@@ -419,27 +375,6 @@ void Node::updateOutgoingCurrent() {
 			OUT_CURRENT[u][Right_side][g] = Q[u][0][g] * (6 * FLUX[g] - C[u][4][g]) - Q[u][1][g] * C[u][3][g] - Q[u][2][g] * j_in_l + Q[u][3][g] * j_in_r;
 		}
 	}
-
-	debugFile << "INCOM_CURRENT\n";
-	for (int i = 0; i < group; i++) {
-		for (int j = 0; j < dim; j++) {
-			debugFile << INCOM_CURRENT[j][Right_side][i] << " ";
-			debugFile << INCOM_CURRENT[j][Left_side][i] << " ";
-		}
-		debugFile << endl;
-	}
-	debugFile << "\n";
-
-	debugFile << "OUT_CURRENT\n";
-	for (int i = 0; i < group; i++) {
-		for (int j = 0; j < dim; j++) {
-			debugFile << OUT_CURRENT[j][Right_side][i] << " ";
-			debugFile << OUT_CURRENT[j][Left_side][i] << " ";
-		}
-		debugFile << endl;
-	}
-	debugFile << "\n";
-	debugFile.close();
 }
 
 void Node::add_product(double* SRC, double* M, double* C, int group) {

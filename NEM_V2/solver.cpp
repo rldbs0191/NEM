@@ -176,6 +176,7 @@ void Solver::Run()
 					maxErr = rel;
 			}
 		}
+
 		for (const auto& entry : globalNodes) {
 			Node* node = entry.second;
 			for (int g = 0; g < group; ++g) {

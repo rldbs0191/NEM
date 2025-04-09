@@ -63,7 +63,10 @@ void Geometry::ReadCell(istream& ins)
 		{
 			try {
 				if (token == ".") {
-					row.push_back(-1); // -1은 외부 영역을 의미
+					row.push_back(-1); // vaccum
+				}
+				else if (token == "0") {
+					row.push_back(0); // reflective
 				}
 				else {
 					int region = stoi(token);
@@ -164,7 +167,7 @@ void Geometry::ReadStructure(istream& ins)
 							size_t globalZ = z * K + k;
 							size_t globalY = y * I + i;
 							size_t globalX = x * J + j;
-							if (templateCell[k][i][j] == -1) continue;
+							if (templateCell[k][i][j] == -1 || templateCell[k][i][j] == 0) continue;
 							Node* node = new Node(templateCell[k][i][j], SOLVER);
 							node->SetCoefficient();
 							GLOBAL_NODE[{globalX, globalY, globalZ}] = node;

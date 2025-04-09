@@ -165,7 +165,9 @@ void Geometry::ReadStructure(istream& ins)
 							size_t globalY = y * I + i;
 							size_t globalX = x * J + j;
 							if (templateCell[k][i][j] == -1) continue;
-							GLOBAL_NODE[{globalX, globalY, globalZ}] = new Node(templateCell[k][i][j], SOLVER);
+							Node* node = new Node(templateCell[k][i][j], SOLVER);
+							node->SetCoefficient();
+							GLOBAL_NODE[{globalX, globalY, globalZ}] = node;
 						}
 					}
 				}

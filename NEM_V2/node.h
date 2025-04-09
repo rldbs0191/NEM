@@ -34,6 +34,7 @@ public:
 	void SetSolver(Solver* s) { SOLVER = s; }
 	const double getWIDTH(int dir) { return WIDTH[dir]; }
 	const double getFLUX(int group) { return FLUX[group]; }
+	const double getold_FLUX(int group) { return old_FLUX[group]; }
 	void setFLUX(int group, double flux) { FLUX[group] = flux; }
 	Node* getNEIGHBOR(int dir, int side) const { return NEIGHBOR[dir][side]; }
 	void setNEIGHBOR(int dir, int side, Node* node) { NEIGHBOR[dir][side] = node; }
@@ -41,6 +42,7 @@ public:
 	double*** getQ() { return Q; }
 	double*** getC() { return C; }
 	double*** getOUT_CURRENT() { return OUT_CURRENT; }
+	void SetCoefficient();
 	void SetCrossSection(double* D, double* R, double* S, double* F, double* CHI);
 	void SetINCOM_CURRENT(int x, int y, int z);
 	void SetBOUNDARY(int x, int y, int z);

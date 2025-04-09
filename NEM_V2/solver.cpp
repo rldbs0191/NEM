@@ -43,7 +43,7 @@ void Solver::ReadInput(const char* input)
 	}
 	file.close();
 	CX.SetCoefficient();
-	
+
 }
 
 void Solver::ReadTitle(istream& ins)
@@ -64,7 +64,7 @@ void Solver::ReadTitle(istream& ins)
 	}
 }
 
-void Solver::ReadCondition(istream &ins)
+void Solver::ReadCondition(istream& ins)
 {
 	char oneChar, buffer[LINE_LEN];
 	bool flag = false;
@@ -77,7 +77,7 @@ void Solver::ReadCondition(istream &ins)
 
 		if (!strcmp(buffer, "DIM")) {
 			ins >> nDIM;
-			WIDTH = new double [nDIM];
+			WIDTH = new double[nDIM];
 		}
 		else if (!strcmp(buffer, "GROUP_NUM")) {
 			ins >> nGROUP;
@@ -91,7 +91,7 @@ void Solver::ReadCondition(istream &ins)
 		}
 		else if (!strcmp(buffer, ENDSTR))
 			flag = true;
-	}	
+	}
 }
 
 void Solver::Run()
@@ -105,20 +105,23 @@ void Solver::Run()
 	bool converged = false;
 	int iter = 0;
 	double prevKeff, norm, denom, maxErr;
-
+	maxErr = 0.0;
 	// 중성자속 저장용
 	map<tuple<int, int, int>, vector<double>> preFlux;
 
 	do {
 		// 1. 이전 중성자속 저장
+		//cout << "preFlux\n";
 		for (const auto& entry : globalNodes) {
 			const auto& coord = entry.first;
 			Node* node = entry.second;
 			vector<double> flux(group);
 			for (int g = 0; g < group; ++g)
-				flux[g] = node->getFLUX(g);
+				flux[g] = node->getold_FLUX(g);
 			preFlux[coord] = flux;
+			//cout << preFlux[coord][0] << " " << preFlux[coord][1] << " ";
 		}
+		//cout << endl;
 
 		prevKeff = K_EFF;
 
@@ -128,8 +131,8 @@ void Solver::Run()
 			int y = get<1>(entry.first);
 			int z = get<2>(entry.first);
 			Node* node = entry.second;
-			int region = node->getREGION()-1;
-			
+			int region = node->getREGION() - 1;
+
 			node->SetINCOM_CURRENT(x, y, z);
 			node->SetCrossSection(CX.DIFFUSION[region],
 				CX.REMOVAL[region],
@@ -141,12 +144,8 @@ void Solver::Run()
 			node->makeOneDimensionalFlux();
 			node->updateAverageFlux();
 			node->updateOutgoingCurrent();
-			
-		//	PrintNodeInfo(x, y, z);
-		}
 
-		for (const auto& entry : globalNodes) {
-
+			//	PrintNodeInfo(x, y, z);
 		}
 
 		// 3. keff 계산용: <flux_new, flux_new> / <flux_new, flux_old>
@@ -162,13 +161,8 @@ void Solver::Run()
 				denom += valNew * valOld;
 			}
 		}
+
 		K_EFF = prevKeff * norm / denom;
-		for (const auto& entry : globalNodes) {
-			Node* node = entry.second;
-			for (int g = 0; g < group; ++g) {
-				node->setFLUX(g, node->getFLUX(g)/K_EFF);
-			}
-		}
 
 		// 4. 수렴 판단
 		maxErr = 0.0;
@@ -176,10 +170,16 @@ void Solver::Run()
 			const auto& coord = entry.first;
 			Node* node = entry.second;
 			for (int g = 0; g < group; ++g) {
-				double diff = abs(node->getFLUX(g) - preFlux[coord][g]);
+				double diff = fabs(node->getFLUX(g) - preFlux[coord][g]);
 				double rel = diff / preFlux[coord][g];
 				if (rel > maxErr)
 					maxErr = rel;
+			}
+		}
+		for (const auto& entry : globalNodes) {
+			Node* node = entry.second;
+			for (int g = 0; g < group; ++g) {
+				node->setFLUX(g, node->getFLUX(g) / K_EFF);
 			}
 		}
 
@@ -187,10 +187,7 @@ void Solver::Run()
 
 		converged = (maxErr < convCrit);
 		iter++;
-
 	} while (!converged);
 
 	cout << "Final keff = " << K_EFF << ", after " << iter << " iterations.\n";
 }
-
-

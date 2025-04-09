@@ -12,10 +12,10 @@ Node::Node(int region, Solver* solver) {
 		WIDTH[i] = solver->WIDTH[i];
 	FLUX = new double[group] {};
 	for (int i = 0; i < group; i++)
-		FLUX[i] = 0.25;
+		FLUX[i] = 1.0;
 	old_FLUX = new double[group] {};
 	for (int i = 0; i < group; i++)
-		old_FLUX[i] = 0.25;
+		old_FLUX[i] = 1.0;
 	D_c = new double[group]();
 	BETA = new double* [dim];
 	for (int i = 0; i < dim; i++)
@@ -136,10 +136,19 @@ Node::~Node() {
 	delete3D(DL, dim, 3);
 }
 
+void Node::SetCoefficient() {
+	int group = SOLVER->nGROUP;
+	int dim = SOLVER->nDIM;
+	for (int i = 0; i < group; i++) {
+		FLUX[i] = FLUX[i]/(SOLVER->GetTotalNodeCount()*group);
+	}
+}
+
 void Node::SetCrossSection(double* D, double* R, double* S, double* F, double* CHI) {
 	int group = SOLVER->nGROUP;
 	int dim = SOLVER->nDIM;
 	double k = SOLVER->K_EFF;
+
 	for (int i = 0; i < group; i++) {
 		D_c[i] = D[i];
 	}
@@ -194,7 +203,7 @@ void Node::SetINCOM_CURRENT(int x, int y, int z) {
 		for (int j = 0; j < 2; j++) {
 			for (int k = 0; k < group; k++) {
 				if (NEIGHBOR[i][j] != nullptr)
-					INCOM_CURRENT[i][j][k] = NEIGHBOR[i][j]->OUT_CURRENT[i][j][k];
+					INCOM_CURRENT[i][j][k] = NEIGHBOR[i][j]->OUT_CURRENT[i][1-j][k];
 				else {
 					if (BOUNDARY[i][j] == REFLECTIVE)
 						INCOM_CURRENT[i][j][k] = OUT_CURRENT[i][j][k];
@@ -263,7 +272,10 @@ void Node::updateTransverseLeakage() {
 			for (int i = 0; i < dim; i++) {
 				int v = (u + i) % dim;
 				double node_width = WIDTH[v];
-				DL[u][0][g] += (OUT_CURRENT[v][Right_side][g] + OUT_CURRENT[v][Left_side][g] - INCOM_CURRENT[v][Right_side][g] - INCOM_CURRENT[v][Left_side][g]) / node_width;//(getSurfaceNetCurrent(v, Right_side, g) - getSurfaceNetCurrent(v, Left_side, g)) / node_width;
+				if( v!= i)
+					DL[u][0][g] += (getSurfaceNetCurrent(v, Right_side, g) + getSurfaceNetCurrent(v, Left_side, g)) / node_width;
+				else
+					DL[u][0][g] += 0.0;
 			}
 			Node* l_node = getNEIGHBOR(u, Left_side);
 			Node* r_node = getNEIGHBOR(u, Right_side);
@@ -311,7 +323,7 @@ void Node::updateTransverseLeakage() {
 	debugFile << "K\n";
 	for (int u = 0; u < dim; u++) {
 		for (int g = 0; g < group; g++) {
-			debugFile << DL[u][0][g] << " ";
+			debugFile << DL[u][0][g]/D_c[g] << " ";
 			debugFile << DL[u][1][g]/D_c[g] << " ";
 			debugFile << DL[u][2][g]/D_c[g] << endl;
 		}
@@ -337,8 +349,8 @@ void Node::makeOneDimensionalFlux() {
 		}
 		add_product(SRC1, M1[u], C[u][1], group);
 		add_product(SRC2, M2[u], C[u][2], group);
-		GaussianElimination(M3[u], C[u][3], SRC1, group);
-		GaussianElimination(M4[u], C[u][4], SRC2, group);
+		GaussianElimination(M3[u], C[u][3], M1[u], group);
+		GaussianElimination(M4[u], C[u][4], M2[u], group);
 		
 	}
 	debugFile << "C\n";
@@ -359,10 +371,13 @@ void Node::updateAverageFlux() {
 	int dim = SOLVER->nDIM;
 	int group = SOLVER->nGROUP;
 	double keff = SOLVER->K_EFF;
+	ofstream debugFile("debug.txt", ios::app);
+	debugFile << scientific << setprecision(5);
 	for (int i = 0; i < group; i++) {
 		for (int j = 0; j < group; j++)
 			MM[i][j] = A[i][j];
 		SRC[i] = 0.0;
+		old_FLUX[i] = FLUX[i];
 	}
 
 	for (int u = 0; u < dim; u++)
@@ -373,16 +388,29 @@ void Node::updateAverageFlux() {
 		for (int g = 0; g < group; g++) {
 			double j_in_l = INCOM_CURRENT[u][Left_side][g];
 			double j_in_r = INCOM_CURRENT[u][Right_side][g];
-			double Q4 = 1.0 - Q[u][2][g] - Q[u][3][g];
+			double Q4 = 1.0 + Q[u][2][g] - Q[u][3][g];
 			SRC[g] += (2.0 * Q[u][0][g] * C[u][4][g] + Q4 * (j_in_l + j_in_r)) / WIDTH[u];
 		}
 	}
+
 	GaussianElimination(MM, FLUX, SRC, group);
+	for (int i = 0; i < group; i++)
+		old_FLUX[i] = FLUX[i];
+
+	debugFile << "FLUX\n";
+	for (int i = 0; i < group; i++)
+	{
+		debugFile << FLUX[i] << " ";
+	}
+	debugFile << "\n\n";
+	debugFile.close();
 }
 
 void Node::updateOutgoingCurrent() {
 	int dim = SOLVER->nDIM;
 	int group = SOLVER->nGROUP;
+	ofstream debugFile("debug.txt", ios::app);
+	debugFile << scientific << setprecision(5);
 	for (int u = 0; u < dim; u++) {
 		for (int g = 0; g < group; g++) {
 			double j_in_l = INCOM_CURRENT[u][Left_side][g];
@@ -391,6 +419,27 @@ void Node::updateOutgoingCurrent() {
 			OUT_CURRENT[u][Right_side][g] = Q[u][0][g] * (6 * FLUX[g] - C[u][4][g]) - Q[u][1][g] * C[u][3][g] - Q[u][2][g] * j_in_l + Q[u][3][g] * j_in_r;
 		}
 	}
+
+	debugFile << "INCOM_CURRENT\n";
+	for (int i = 0; i < group; i++) {
+		for (int j = 0; j < dim; j++) {
+			debugFile << INCOM_CURRENT[j][Right_side][i] << " ";
+			debugFile << INCOM_CURRENT[j][Left_side][i] << " ";
+		}
+		debugFile << endl;
+	}
+	debugFile << "\n";
+
+	debugFile << "OUT_CURRENT\n";
+	for (int i = 0; i < group; i++) {
+		for (int j = 0; j < dim; j++) {
+			debugFile << OUT_CURRENT[j][Right_side][i] << " ";
+			debugFile << OUT_CURRENT[j][Left_side][i] << " ";
+		}
+		debugFile << endl;
+	}
+	debugFile << "\n";
+	debugFile.close();
 }
 
 void Node::add_product(double* SRC, double* M, double* C, int group) {

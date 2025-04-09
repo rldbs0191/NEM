@@ -3,14 +3,14 @@ Title (
 );
 
 Condition (
-	DIM 3
+	DIM 2
 	GROUP_NUM 2
-	WIDTH 10 1 1
+	WIDTH 20 20
 );
 
 Geometry (
 	CEL 1 (
-	1 1
+	3 2 2 2 3 2 4 4 .
 	);
 
 	Structure (

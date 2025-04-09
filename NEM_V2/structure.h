@@ -34,6 +34,15 @@ public:
 	const Structure& GetStructure() const { return STRUCTURE; }
 	void PrintNodeNeighbors(int x, int y, int z) const;
 	void PrintNodeInfo(int x, int y, int z) const;
+	int GetTotalNodeCount() const {
+		int totalNodes = 0;
+		for (const auto& layer : STRUCTURE) {
+			for (const auto& row : layer) {
+				totalNodes += static_cast<int>(row.size());
+			}
+		}
+		return totalNodes;
+	}
 };
 
 #endif

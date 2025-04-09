@@ -140,7 +140,7 @@ void Node::SetCoefficient() {
 	int group = SOLVER->nGROUP;
 	int dim = SOLVER->nDIM;
 	for (int i = 0; i < group; i++) {
-		FLUX[i] = FLUX[i]/(SOLVER->GetTotalNodeCount()*group);
+		FLUX[i] = FLUX[i] / (SOLVER->GetTotalNodeCount() * group);
 	}
 }
 
@@ -203,7 +203,7 @@ void Node::SetINCOM_CURRENT(int x, int y, int z) {
 		for (int j = 0; j < 2; j++) {
 			for (int k = 0; k < group; k++) {
 				if (NEIGHBOR[i][j] != nullptr)
-					INCOM_CURRENT[i][j][k] = NEIGHBOR[i][j]->OUT_CURRENT[i][1-j][k];
+					INCOM_CURRENT[i][j][k] = NEIGHBOR[i][j]->OUT_CURRENT[i][1 - j][k];
 				else {
 					if (BOUNDARY[i][j] == REFLECTIVE)
 						INCOM_CURRENT[i][j][k] = OUT_CURRENT[i][j][k];
@@ -263,7 +263,7 @@ void Node::updateTransverseLeakage() {
 			for (int i = 0; i < dim; i++) {
 				int v = (u + i) % dim;
 				double node_width = WIDTH[v];
-				if( v!= i)
+				if (v != i)
 					DL[u][0][g] += (getSurfaceNetCurrent(v, Right_side, g) + getSurfaceNetCurrent(v, Left_side, g)) / node_width;
 				else
 					DL[u][0][g] += 0.0;
@@ -308,7 +308,7 @@ void Node::updateTransverseLeakage() {
 			}
 
 			DL[u][1][g] = (L_r - L_l) / 2.0;
-			DL[u][2][g] = (L_r + L_l - 2.0 * DL0_c) / 2.0;
+			DL[u][2][g] = (L_r + L_l) / 2.0 - DL0_c;
 		}
 	}
 }
@@ -322,8 +322,8 @@ void Node::makeOneDimensionalFlux() {
 			double flux_l = getSurfaceFlux(u, Left_side, g);
 			double flux_r = getSurfaceFlux(u, Right_side, g);
 			C[u][0][g] = FLUX[g];
-			C[u][1][g] = (flux_r - flux_l) / 2.0;
-			C[u][2][g] = (flux_r + flux_l) / 2.0 - FLUX[g];
+			C[u][1][g] = flux_r - flux_l;
+			C[u][2][g] = flux_r + flux_l - FLUX[g];
 			SRC1[g] = DL[u][1][g];
 			SRC2[g] = DL[u][2][g];
 		}
@@ -331,7 +331,7 @@ void Node::makeOneDimensionalFlux() {
 		add_product(SRC2, M2[u], C[u][2], group);
 		GaussianElimination(M3[u], C[u][3], M1[u], group);
 		GaussianElimination(M4[u], C[u][4], M2[u], group);
-		
+
 	}
 }
 

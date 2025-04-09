@@ -307,8 +307,8 @@ void Node::updateTransverseLeakage() {
 					L_r = DL0_c / 2;
 			}
 
-			DL[u][1][g] = D * (L_r - L_l) / 2.0;
-			DL[u][2][g] = D * (L_r + L_l - 2.0 * DL0_c) / 2.0;
+			DL[u][1][g] = (L_r - L_l) / 2.0;
+			DL[u][2][g] = (L_r + L_l - 2.0 * DL0_c) / 2.0;
 		}
 	}
 }

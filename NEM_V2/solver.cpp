@@ -147,16 +147,13 @@ void Solver::Run()
 				CX.SCATTERING[region],
 				CX.FISSION[region],
 				CX.CHI[region]);
-			cout << scientific << setprecision(5);
 			node->updateTransverseLeakage();
 			node->makeOneDimensionalFlux();
 			node->updateAverageFlux();
 			node->updateOutgoingCurrent();
-
-			//	PrintNodeInfo(x, y, z);
 		}
 
-		// 3. keff 계산용: <flux_new, flux_new> / <flux_new, flux_old>
+		// 3. K_EFF 계산
 		norm = 0.0;
 		denom = 0.0;
 		for (const auto& entry : globalNodes) {
@@ -202,7 +199,7 @@ void Solver::Run()
 
 	for (int g = 0; g < group; ++g) {
 		fluxFiles[g] << scientific << setprecision(5);
-		map<int, map<int, map<int, double>>> fluxData; // z -> (x -> y -> flux)
+		map<int, map<int, map<int, double>>> fluxData; 
 
 		for (const auto& entry : globalNodes) {
 			const auto& coord = entry.first;
@@ -227,10 +224,10 @@ void Solver::Run()
 			for (int y = minY; y <= maxY; ++y) {
 				for (int x = minX; x <= maxX; ++x) {
 					if (xMap.count(x) && xMap.at(x).count(y)) {
-						fluxFiles[g] << xMap.at(x).at(y) << " ";
+						fluxFiles[g] << xMap.at(x).at(y) << "\t";
 					}
 					else {
-						fluxFiles[g] << "0.0 ";
+						fluxFiles[g] << "\t";
 					}
 				}
 				fluxFiles[g] << "\n";

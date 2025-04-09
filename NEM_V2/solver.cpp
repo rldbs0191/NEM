@@ -97,8 +97,6 @@ void Solver::ReadCondition(istream& ins)
 void Solver::Run()
 {
 	cout << "Solver is running..." << endl;
-	const auto& globalNodes = GEOMETRY.GetGlobalNode();
-
 	int group = nGROUP;
 	int dim = nDIM;
 	double convCrit = 1e-6;
@@ -106,6 +104,16 @@ void Solver::Run()
 	int iter = 0;
 	double prevKeff, norm, denom, maxErr;
 	maxErr = 0.0;
+	const auto& globalNodes = GEOMETRY.GetGlobalNode();
+	ofstream resultFile("output.out");
+
+	// 그룹별 FLUX 파일 초기화
+	vector<ofstream> fluxFiles(group);
+	for (int g = 0; g < group; ++g) {
+		string fileName = "flux_group_" + to_string(g+1) + ".txt";
+		fluxFiles[g].open(fileName, std::ios::trunc);
+	}
+
 	// 중성자속 저장용
 	map<tuple<int, int, int>, vector<double>> preFlux;
 
@@ -185,10 +193,52 @@ void Solver::Run()
 		}
 
 		cout << "Iteration " << iter + 1 << ": K_EFF = " << K_EFF << ", Error = " << maxErr << endl;
+		resultFile << scientific << setprecision(5);
+		resultFile << "Iteration " << iter + 1 << ": K_EFF = " << K_EFF << ", Error = " << maxErr << endl;
 
 		converged = (maxErr < convCrit);
 		iter++;
 	} while (!converged);
 
-	cout << "Final keff = " << K_EFF << ", after " << iter << " iterations.\n";
+	for (int g = 0; g < group; ++g) {
+		fluxFiles[g] << scientific << setprecision(5);
+		map<int, map<int, map<int, double>>> fluxData; // z -> (x -> y -> flux)
+
+		for (const auto& entry : globalNodes) {
+			const auto& coord = entry.first;
+			Node* node = entry.second;
+			int x = get<0>(coord);
+			int y = get<1>(coord);
+			int z = get<2>(coord);
+			fluxData[z][x][y] = node->getFLUX(g);
+		}
+
+		for (const auto& zLayer : fluxData) {
+			int z = zLayer.first;
+			fluxFiles[g] << "Z = " << z << "\n";
+			const auto& xMap = zLayer.second;
+
+			// Determine the range of x and y for formatting
+			int minX = xMap.begin()->first;
+			int maxX = xMap.rbegin()->first;
+			int minY = xMap.begin()->second.begin()->first;
+			int maxY = xMap.begin()->second.rbegin()->first;
+
+			for (int y = minY; y <= maxY; ++y) {
+				for (int x = minX; x <= maxX; ++x) {
+					if (xMap.count(x) && xMap.at(x).count(y)) {
+						fluxFiles[g] << xMap.at(x).at(y) << " ";
+					}
+					else {
+						fluxFiles[g] << "0.0 ";
+					}
+				}
+				fluxFiles[g] << "\n";
+			}
+			fluxFiles[g] << "\n";
+		}
+
+		fluxFiles[g].close();
+	}
+	resultFile.close();
 }

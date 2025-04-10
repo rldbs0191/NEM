@@ -188,14 +188,13 @@ void Solver::Run()
 				node->setFLUX(g, node->getFLUX(g) / K_EFF);
 			}
 		}
-
+		cout << fixed << setprecision(6);
 		cout << "Iteration " << iter + 1 << ": K_EFF = " << K_EFF << ", Error = " << maxErr << endl;
-		resultFile << scientific << setprecision(5);
-		resultFile << "Iteration " << iter + 1 << ": K_EFF = " << K_EFF << ", Error = " << maxErr << endl;
 
 		converged = (maxErr < convCrit);
 		iter++;
 	} while (!converged);
+	cout << "Converged after " << iter << " iterations." << "  " << "K_EFF: " << K_EFF << "  " << "Error: "<< maxErr << endl;
 
 	for (int g = 0; g < group; ++g) {
 		fluxFiles[g] << scientific << setprecision(5);

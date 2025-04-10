@@ -176,20 +176,20 @@ void Node::SetCrossSection(double* D, double* R, double* S, double* F, double* C
 		for (int j = 0; j < group; j++)
 		{
 			Q[i][0][j] = BETA[i][j] / (1 + 12 * BETA[i][j]);
-			Q[i][1][j] = BETA[i][j] / (1 + 4 * BETA[i][j]);
-			Q[i][2][j] = 8 * BETA[i][j] / ((1 + 12 * BETA[i][j]) * (1 + 4 * BETA[i][j]));
-			Q[i][3][j] = (1 - 48 * BETA[i][j] * BETA[i][j]) / ((1 + 12 * BETA[i][j]) * (1 + 4 * BETA[i][j]));
+			Q[i][1][j] = BETA[i][j] / ((1 + 12 * BETA[i][j]) * (1 + 4 * BETA[i][j]));
+			Q[i][2][j] = (1 - 48 * BETA[i][j] * BETA[i][j]) / ((1 + 12 * BETA[i][j]) * (1 + 4 * BETA[i][j]));
+			Q[i][3][j] = BETA[i][j] / (1 + 4 * BETA[i][j]);
 		}
 	}
 
 	for (int i = 0; i < dim; i++) {
 		for (int j = 0; j < group; j++) {
 			for (int k = 0; k < group; k++) {
-				M3[i][j][k] = A[j][k] / 10.0;
-				M4[i][j][k] = A[j][k] / 14.0;
+				M3[i][j][k] = A[j][k]/10.0;
+				M4[i][j][k] = A[j][k]/14.0;
 				if (j == k) {
-					M3[i][j][k] += 6.0 * D[j] / (WIDTH[i] * WIDTH[i]);
-					M4[i][j][k] += 10.0 * D[j] / (WIDTH[i] * WIDTH[i]);
+					M3[i][j][k] += 6.0 * BETA[i][j] / WIDTH[i];
+					M4[i][j][k] += 10.0 * BETA[i][j] / WIDTH[i];
 				}
 			}
 		}
@@ -202,7 +202,7 @@ void Node::SetINCOM_CURRENT(int x, int y, int z) {
 	for (int i = 0; i < dim; i++) {
 		for (int j = 0; j < 2; j++) {
 			for (int k = 0; k < group; k++) {
-				if (NEIGHBOR[i][j] != nullptr)
+				if (NEIGHBOR[i][j])
 					INCOM_CURRENT[i][j][k] = NEIGHBOR[i][j]->OUT_CURRENT[i][1 - j][k];
 				else {
 					if (BOUNDARY[i][j] == REFLECTIVE)
@@ -262,11 +262,8 @@ void Node::updateTransverseLeakage() {
 			DL[u][0][g] = 0.0;
 			for (int i = 0; i < dim; i++) {
 				int v = (u + i) % dim;
-				double node_width = WIDTH[v];
 				if (v != i)
-					DL[u][0][g] += (getSurfaceNetCurrent(v, Right_side, g) + getSurfaceNetCurrent(v, Left_side, g)) / node_width / D_c[g];
-				else
-					DL[u][0][g] += 0.0;
+					DL[u][0][g] += (getSurfaceNetCurrent(v, Right_side, g) + getSurfaceNetCurrent(v, Left_side, g)) / WIDTH[v] / D_c[g];
 			}
 			Node* l_node = getNEIGHBOR(u, Left_side);
 			Node* r_node = getNEIGHBOR(u, Right_side);
@@ -354,7 +351,7 @@ void Node::updateAverageFlux() {
 		for (int g = 0; g < group; g++) {
 			double j_in_l = INCOM_CURRENT[u][Left_side][g];
 			double j_in_r = INCOM_CURRENT[u][Right_side][g];
-			double Q4 = 1.0 + Q[u][2][g] - Q[u][3][g];
+			double Q4 = 1.0 + 8 * Q[u][1][g] - Q[u][2][g];
 			SRC[g] += (2.0 * Q[u][0][g] * C[u][4][g] + Q4 * (j_in_l + j_in_r)) / WIDTH[u];
 		}
 	}
@@ -371,8 +368,8 @@ void Node::updateOutgoingCurrent() {
 		for (int g = 0; g < group; g++) {
 			double j_in_l = INCOM_CURRENT[u][Left_side][g];
 			double j_in_r = INCOM_CURRENT[u][Right_side][g];
-			OUT_CURRENT[u][Left_side][g] = Q[u][0][g] * (6 * FLUX[g] - C[u][4][g]) + Q[u][1][g] * C[u][3][g] - Q[u][2][g] * j_in_r + Q[u][3][g] * j_in_l;
-			OUT_CURRENT[u][Right_side][g] = Q[u][0][g] * (6 * FLUX[g] - C[u][4][g]) - Q[u][1][g] * C[u][3][g] - Q[u][2][g] * j_in_l + Q[u][3][g] * j_in_r;
+			OUT_CURRENT[u][Right_side][g] = Q[u][0][g] * (6 * FLUX[g] - C[u][4][g]) - Q[u][1][g] * j_in_l * 8 + Q[u][2][g] * j_in_r - Q[u][3][g] * C[u][3][g];
+			OUT_CURRENT[u][Left_side][g] = Q[u][0][g] * (6 * FLUX[g] - C[u][4][g]) - Q[u][1][g] * j_in_r * 8 + Q[u][2][g] * j_in_l + Q[u][3][g] * C[u][3][g];
 		}
 	}
 }

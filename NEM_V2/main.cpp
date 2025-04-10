@@ -6,9 +6,12 @@ int main(void) {
 	cout << "Input file name: ";
 	cin >> inputFile;
 	solver.ReadInput(inputFile.c_str());
-//	solver.PrintStructure();
-//	solver.PrintCX();
-//	cout << "====================\n";
+	cout << "====================\n";
+	solver.PrintStructure();
+	cout << "====================\n";
+	solver.PrintCX();
+	cout << "====================\n";
 	solver.Run();
+	system("pause");
 	return 0;
 }

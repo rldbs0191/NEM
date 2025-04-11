@@ -244,7 +244,12 @@ void Geometry::PrintStructure() const
 			cout << "y = " << y << "\n";
 			for (size_t x = 0; x < STRUCTURE[z][y].size(); ++x)
 			{
-				cout << setw(3) << STRUCTURE[z][y][x] << " ";
+				if (STRUCTURE[z][y][x] == -1)
+					cout << setw(3) << "   " << " ";
+				else if (STRUCTURE[z][y][x] == 0)
+					cout << setw(3) << "   " << " ";
+				else
+					cout << setw(3) << STRUCTURE[z][y][x] << " ";
 			}
 			cout << "\n";
 		}

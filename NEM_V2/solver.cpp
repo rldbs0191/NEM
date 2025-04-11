@@ -105,7 +105,6 @@ void Solver::Run()
 	double prevKeff, norm, denom, maxErr;
 	maxErr = 0.0;
 	const auto& globalNodes = GEOMETRY.GetGlobalNode();
-	ofstream resultFile("output.out");
 
 	// 그룹별 FLUX 파일 초기화
 	vector<ofstream> fluxFiles(group);
@@ -236,5 +235,4 @@ void Solver::Run()
 
 		fluxFiles[g].close();
 	}
-	resultFile.close();
 }

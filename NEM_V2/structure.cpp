@@ -149,9 +149,9 @@ void Geometry::ReadStructure(istream& ins)
 				for (size_t k = 0; k < K; ++k) {
 					for (size_t i = 0; i < I; ++i) {
 						for (size_t j = 0; j < J; ++j) {
-							size_t globalZ = z * K + k;
-							size_t globalY = y * I + i;
-							size_t globalX = x * J + j;
+							int globalZ = static_cast<int>(z * K + k);
+							int globalY = static_cast<int>(y * I + i);
+							int globalX = static_cast<int>(x * J + j);
 
 							if (STRUCTURE[globalZ].size() <= globalY)
 								STRUCTURE[globalZ].resize(globalY + 1);
@@ -164,9 +164,9 @@ void Geometry::ReadStructure(istream& ins)
 				for (size_t k = 0; k < K; ++k) {
 					for (size_t i = 0; i < I; ++i) {
 						for (size_t j = 0; j < J; ++j) {
-							size_t globalZ = z * K + k;
-							size_t globalY = y * I + i;
-							size_t globalX = x * J + j;
+							int globalZ = static_cast<int>(z * K + k);
+							int globalY = static_cast<int>(y * I + i);
+							int globalX = static_cast<int>(x * J + j);
 							if (templateCell[k][i][j] == -1 || templateCell[k][i][j] == 0) continue;
 							Node* node = new Node(templateCell[k][i][j], SOLVER);
 							node->SetCoefficient();
@@ -200,7 +200,7 @@ void Geometry::ReadStructure(istream& ins)
 		Node* node = entry.second;
 		node->SetINCOM_CURRENT(x, y, z);
 	}
-	
+
 }
 
 void Geometry::SetNeighbors(int x, int y, int z) {
@@ -305,7 +305,7 @@ void Geometry::PrintNodeInfo(int x, int y, int z) const {
 	cout << "\n";
 
 	cout << "BETA: ";
-	for(int u=0;u<dim;u++)
+	for (int u = 0; u < dim; u++)
 		for (int g = 0; g < group; ++g)
 			cout << node->BETA[u][g] << " ";
 	cout << "\n";
@@ -347,7 +347,7 @@ void Geometry::PrintNodeInfo(int x, int y, int z) const {
 	for (int i = 0; i < dim; i++) {
 		for (int j = 0; j < 5; j++) {
 			for (int k = 0; k < group; k++) {
-				cout<<node->C[i][j][k] << " ";
+				cout << node->C[i][j][k] << " ";
 			}
 			cout << "\n";
 		}

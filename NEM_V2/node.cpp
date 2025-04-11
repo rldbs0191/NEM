@@ -185,8 +185,8 @@ void Node::SetCrossSection(double* D, double* R, double* S, double* F, double* C
 	for (int i = 0; i < dim; i++) {
 		for (int j = 0; j < group; j++) {
 			for (int k = 0; k < group; k++) {
-				M3[i][j][k] = A[j][k]/10.0;
-				M4[i][j][k] = A[j][k]/14.0;
+				M3[i][j][k] = A[j][k] / 10.0;
+				M4[i][j][k] = A[j][k] / 14.0;
 				if (j == k) {
 					M3[i][j][k] += 6.0 * BETA[i][j] / WIDTH[i];
 					M4[i][j][k] += 10.0 * BETA[i][j] / WIDTH[i];
@@ -238,10 +238,10 @@ void Node::SetBOUNDARY(int x, int y, int z) {
 					const auto& row = layer[ny];
 					if (nx >= 0 && nx < static_cast<int>(row.size())) {
 						if (row[nx] == -1) {
-							bc = VACUUM;
-						}
-						else
 							bc = REFLECTIVE;
+						}
+						else if (row[nx] == 0) 
+							bc = VACUUM;
 					}
 				}
 			}

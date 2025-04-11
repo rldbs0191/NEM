@@ -22,7 +22,7 @@ CXManage::~CXManage() {
 	delete[] CHI;
 }
 
-void CXManage::SetSolver(Solver* s){
+void CXManage::SetSolver(Solver* s) {
 	SOLVER = s;
 	Group = s->nGROUP;
 }
@@ -105,8 +105,8 @@ void CXManage::SetCoefficient() {
 	const auto& globalNodes = SOLVER->GEOMETRY.GetGlobalNode();
 	for (auto& entry : globalNodes) {
 		Node* node = entry.second;
-		
-		int region = node->getREGION()-1;
+
+		int region = node->getREGION() - 1;
 		node->SetCrossSection(
 			DIFFUSION[region],
 			REMOVAL[region],
@@ -125,7 +125,7 @@ void CXManage::PrintCX() const {
 	cout << "\n[DIFFUSION]\n" << "\n";
 	for (int i = 0; i < nRegion; i++) {
 		for (int j = 0; j < Group; j++)
-			cout << DIFFUSION[i][j]<<" ";
+			cout << DIFFUSION[i][j] << " ";
 		cout << "\n";
 	}
 	cout << "\n";

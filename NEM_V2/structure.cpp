@@ -140,7 +140,6 @@ void Geometry::ReadStructure(istream& ins)
 			while (ss >> token) {
 				int cellID = stoi(token);
 				if (CELS.find(cellID) == CELS.end()) {
-					cerr << "Invalid CEL ID: " << cellID << endl;
 					continue;
 				}
 

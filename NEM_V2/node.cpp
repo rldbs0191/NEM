@@ -240,7 +240,7 @@ void Node::SetBOUNDARY(int x, int y, int z) {
 						if (row[nx] == -1) {
 							bc = REFLECTIVE;
 						}
-						else if (row[nx] == 0) 
+						else if (row[nx] == 0)
 							bc = VACUUM;
 					}
 				}

@@ -126,9 +126,8 @@ void Solver::Run()
 			for (int g = 0; g < group; ++g)
 				flux[g] = node->getold_FLUX(g);
 			preFlux[coord] = flux;
-			//cout << preFlux[coord][0] << " " << preFlux[coord][1] << " ";
 		}
-		//cout << endl;
+
 
 		prevKeff = K_EFF;
 
@@ -197,7 +196,7 @@ void Solver::Run()
 
 	for (int g = 0; g < group; ++g) {
 		fluxFiles[g] << scientific << setprecision(5);
-		map<int, map<int, map<int, double>>> fluxData; 
+		map<int, map<int, map<int, double>>> fluxData;
 
 		for (const auto& entry : globalNodes) {
 			const auto& coord = entry.first;
@@ -207,32 +206,27 @@ void Solver::Run()
 			int z = get<2>(coord);
 			fluxData[z][x][y] = node->getFLUX(g);
 		}
-
-		for (const auto& zLayer : fluxData) {
-			int z = zLayer.first;
-			fluxFiles[g] << "Z = " << z << "\n";
-			const auto& xMap = zLayer.second;
-
-			// Determine the range of x and y for formatting
-			int minX = xMap.begin()->first;
-			int maxX = xMap.rbegin()->first;
-			int minY = xMap.begin()->second.begin()->first;
-			int maxY = xMap.begin()->second.rbegin()->first;
-
-			for (int y = minY; y <= maxY; ++y) {
-				for (int x = minX; x <= maxX; ++x) {
-					if (xMap.count(x) && xMap.at(x).count(y)) {
-						fluxFiles[g] << xMap.at(x).at(y) << "\t";
+		const auto& structure = GEOMETRY.GetStructure();
+		for (int g = 0; g < group; ++g) {
+			fluxFiles[g] << scientific << setprecision(2);
+			for (int z = 0; z < structure.size(); ++z) {
+				fluxFiles[g] << "Z = " << z << "\n";
+				for (int y = 0; y < structure[z].size(); ++y) {
+					for (int x = 0; x < structure[z][y].size(); ++x) {
+						int region = structure[z][y][x];
+						if (region <= 0) {
+							fluxFiles[g] << "\t";
+						}
+						else {
+							Node* node = GEOMETRY.GetGlobalNode().at({ x, y, z });
+							fluxFiles[g] << node->getFLUX(g) << "\t";
+						}
 					}
-					else {
-						fluxFiles[g] << "\t";
-					}
+					fluxFiles[g] << "\n";
 				}
 				fluxFiles[g] << "\n";
 			}
-			fluxFiles[g] << "\n";
+			fluxFiles[g].close();
 		}
-
-		fluxFiles[g].close();
 	}
 }

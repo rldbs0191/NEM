@@ -39,7 +39,7 @@ public:
 		for (const auto& layer : STRUCTURE) {
 			for (const auto& row : layer) {
 				for (const auto& value : row) {
-					if (value != 0 && value != -1) {
+					if (value > 0) {
 						totalNodes++;
 					}
 				}

@@ -13,7 +13,6 @@
 using namespace std;  
 
 #define NU 1.0;
-#define alb 0.4692
 #define LINE_LEN 100  
 
 #define X_dir 0  

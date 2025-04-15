@@ -42,7 +42,6 @@ public:
 	double*** getQ() { return Q; }
 	double*** getC() { return C; }
 	double*** getOUT_CURRENT() { return OUT_CURRENT; }
-	void SetCoefficient();
 	void SetCrossSection(double* D, double* R, double* S, double* F, double* CHI);
 	void SetINCOM_CURRENT(int x, int y, int z);
 	void SetBOUNDARY(int x, int y, int z);

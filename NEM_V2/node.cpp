@@ -136,14 +136,6 @@ Node::~Node() {
 	delete3D(DL, dim, 3);
 }
 
-void Node::SetCoefficient() {
-	int group = SOLVER->nGROUP;
-	int dim = SOLVER->nDIM;
-	for (int i = 0; i < group; i++) {
-		FLUX[i] = FLUX[i] / (SOLVER->GetTotalNodeCount() * group);
-	}
-}
-
 void Node::SetCrossSection(double* D, double* R, double* S, double* F, double* CHI) {
 	int group = SOLVER->nGROUP;
 	int dim = SOLVER->nDIM;
@@ -199,7 +191,7 @@ void Node::SetCrossSection(double* D, double* R, double* S, double* F, double* C
 void Node::SetINCOM_CURRENT(int x, int y, int z) {
 	int dim = SOLVER->nDIM;
 	int group = SOLVER->nGROUP;
-
+	double** alb = SOLVER->ALBEDO;
 	for (int i = 0; i < dim; i++) {
 		for (int j = 0; j < 2; j++) {
 			for (int k = 0; k < group; k++) {
@@ -207,7 +199,7 @@ void Node::SetINCOM_CURRENT(int x, int y, int z) {
 					INCOM_CURRENT[i][j][k] = NEIGHBOR[i][j]->OUT_CURRENT[i][1 - j][k];
 				else {
 					if (BOUNDARY[i][j] == REFLECTIVE)
-						INCOM_CURRENT[i][j][k] = OUT_CURRENT[i][j][k]*(1. - 2. * alb) / (1. + 2. * alb);
+						INCOM_CURRENT[i][j][k] = OUT_CURRENT[i][j][k]*(1. - 2. * alb[i][j]) / (1. + 2. * alb[i][j]);
 					else if (BOUNDARY[i][j] == VACUUM)
 						INCOM_CURRENT[i][j][k] = 0.0;
 				}

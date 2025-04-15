@@ -168,7 +168,7 @@ void Geometry::ReadStructure(istream& ins)
 							int globalX = static_cast<int>(x * J + j);
 							if (templateCell[k][i][j] == -1 || templateCell[k][i][j] == 0) continue;
 							Node* node = new Node(templateCell[k][i][j], SOLVER);
-							node->SetCoefficient();
+
 							GLOBAL_NODE[{globalX, globalY, globalZ}] = node;
 						}
 					}

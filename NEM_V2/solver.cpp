@@ -5,6 +5,7 @@ Solver::Solver()
 	nDIM = 0;
 	nGROUP = 0;
 	WIDTH = nullptr;
+	ALBEDO = nullptr;
 	CX = CXManage();
 	GEOMETRY = Geometry();
 }
@@ -87,6 +88,17 @@ void Solver::ReadCondition(istream& ins)
 			for (int i = 0; i < nDIM; i++)
 			{
 				ins >> WIDTH[i];
+			}
+		}
+		else if (!strcmp(buffer, "ALBEDO")) {
+			ALBEDO = new double*[nDIM];
+			for (int i = 0; i < nDIM; i++)
+			{
+				ALBEDO[i] = new double[2];
+				for (int j = 0; j < 2; j++)
+				{
+					ins >> ALBEDO[i][j];
+				}
 			}
 		}
 		else if (!strcmp(buffer, ENDSTR))

@@ -180,7 +180,7 @@ void Solver::Run()
 			for (int i = 0; i < nodeVec.size(); ++i) {
 				for (int g = 0; g < group; ++g) {
 					double diff = fabs(nodeVec[i]->getFLUX(g) - preFlux[i][g]);
-					double rel = diff / (preFlux[i][g] + 1e-12);
+					double rel = diff / preFlux[i][g];
 					if (rel > threadMax)
 						threadMax = rel;
 				}
@@ -212,4 +212,31 @@ void Solver::Run()
 	cout << "Converged after " << iter << " iterations.  K_EFF: " << K_EFF << "  ";
 	cout << scientific << setprecision(5);
 	cout << "Error: " << maxErr << endl;
+
+	const auto& structure = GEOMETRY.GetStructure();
+	std::vector<std::ofstream> fluxFiles(group);
+	for (int g = 0; g < group; ++g) {
+		string fileName = "flux_group_" + to_string(g + 1) + ".txt";
+		fluxFiles[g].open(fileName, std::ios::trunc);
+		fluxFiles[g] << scientific << setprecision(5);
+
+		for (int z = 0; z < structure.size(); ++z) {
+			fluxFiles[g] << "Z = " << z << "	";
+				for (int y = 0; y < structure[z].size(); ++y) {
+					for (int x = 0; x < structure[z][y].size(); ++x) {
+						int region = structure[z][y][x];
+						if (region <= 0) {
+							fluxFiles[g] << "	";
+						}
+						else {
+							Node* node = GEOMETRY.GetGlobalNode().at({ x, y, z });
+							fluxFiles[g] << node->getFLUX(g) << "	";
+						}
+					}
+					fluxFiles[g] << "   ";
+				}
+			fluxFiles[g] << "	";
+		}
+		fluxFiles[g].close();
+	}
 }

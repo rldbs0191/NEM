@@ -1,44 +1,49 @@
-import matplotlib.pyplot as plt
 import numpy as np
-import os
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 
-def read_flux_file(filename):
-    flux_data = []
-    current_layer = []
-    with open(filename, 'r') as f:
-        for line in f:
-            line = line.strip()
-            if line.startswith("Z ="):
-                if current_layer:
-                    max_len = max(len(row) for row in current_layer)
-                    padded = [row + [0.0] * (max_len - len(row)) for row in current_layer]
-                    flux_data.append(np.array(padded, dtype=float))
-                    current_layer = []
-            elif line:
-                values = [float(val) for val in line.split() if val.strip()]
-                if values:
-                    current_layer.append(values)
-        if current_layer:
-            max_len = max(len(row) for row in current_layer)
-            padded = [row + [0.0] * (max_len - len(row)) for row in current_layer]
-            flux_data.append(np.array(padded, dtype=float))
-    return np.array(flux_data)
+# 파일 불러오기
+with open("flux_group_1.txt", "r") as f:
+    lines = f.readlines()
 
-def plot_flux_2d_per_layer(flux_3d, group=1):
-    os.makedirs(f'flux_group{group}_layers', exist_ok=True)
-    for z in range(flux_3d.shape[0]):
-        plt.figure(figsize=(6, 5))
-        plt.imshow(flux_3d[z], cmap='viridis', origin='lower')
-        plt.title(f'Flux Group {group} - Z = {z}')
-        plt.colorbar(label='Flux')
-        plt.xlabel('X')
-        plt.ylabel('Y')
-        plt.tight_layout()
-        plt.savefig(f'flux_group{group}_layers/z{z}.png', dpi=300)
-        plt.close()
+# 유효한 줄만 필터링
+filtered_lines = []
+for line in lines:
+    try:
+        values = [float(x.replace('e', 'E')) for x in line.split()]
+        if len(values) >= 10:
+            filtered_lines.append(values)
+    except ValueError:
+        continue
 
-# 실행
-flux_array = read_flux_file('flux_group_1.txt')
-plot_flux_2d_per_layer(flux_array, group=1)
-flux_array = read_flux_file('flux_group_2.txt')
-plot_flux_2d_per_layer(flux_array, group=2)
+# 가장 짧은 줄 기준 자르기
+min_len = min(len(row) for row in filtered_lines)
+trimmed_array = np.array([row[:min_len] for row in filtered_lines])
+
+# 정규화
+norm_flux_array = trimmed_array / np.max(trimmed_array)
+
+# 애니메이션 생성
+fig, ax = plt.subplots()
+line, = ax.plot([], [], lw=2)
+ax.set_ylim(0, 1.1)
+ax.set_xlim(0, norm_flux_array.shape[1])
+ax.set_title("Flux Distribution per Layer")
+ax.set_xlabel("Position")
+ax.set_ylabel("Normalized Flux")
+
+def init():
+    line.set_data([], [])
+    return line,
+
+def animate(i):
+    x = np.arange(norm_flux_array.shape[1])
+    y = norm_flux_array[i]
+    line.set_data(x, y)
+    ax.set_title(f"Flux Distribution - Layer {i + 1}")
+    return line,
+
+ani = animation.FuncAnimation(fig, animate, init_func=init, frames=norm_flux_array.shape[0], blit=True)
+
+# gif로 저장
+ani.save("flux_distribution.gif", writer="pillow", fps=5)

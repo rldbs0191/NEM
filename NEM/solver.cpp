@@ -218,23 +218,23 @@ void Solver::Run()
 	for (int g = 0; g < group; ++g) {
 		string fileName = "flux_group_" + to_string(g + 1) + ".txt";
 		fluxFiles[g].open(fileName, std::ios::trunc);
-		fluxFiles[g] << scientific << setprecision(5);
+		fluxFiles[g] << scientific << setprecision(2);
 
 		for (int z = 0; z < structure.size(); ++z) {
 			fluxFiles[g] << "Z = " << z << "\n";
-				for (int y = 0; y < structure[z].size(); ++y) {
-					for (int x = 0; x < structure[z][y].size(); ++x) {
-						int region = structure[z][y][x];
-						if (region <= 0) {
-							fluxFiles[g] << "   ";
-						}
-						else {
-							Node* node = GEOMETRY.GetGlobalNode().at({ x, y, z });
-							fluxFiles[g] << node->getFLUX(g) << "	";
-						}
+			for (int y = 0; y < structure[z].size(); ++y) {
+				for (int x = 0; x < structure[z][y].size(); ++x) {
+					int region = structure[z][y][x];
+					if (region <= 0) {
+						fluxFiles[g] << "\t\t\t";
 					}
-					fluxFiles[g] << "\n";
+					else {
+						Node* node = GEOMETRY.GetGlobalNode().at({ x, y, z });
+						fluxFiles[g] << node->getFLUX(g) << "\t";
+					}
 				}
+				fluxFiles[g] << "\n";
+			}
 			fluxFiles[g] << "\n";
 		}
 		fluxFiles[g].close();

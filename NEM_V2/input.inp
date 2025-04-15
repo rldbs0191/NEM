@@ -6,7 +6,7 @@ Condition (
 	DIM 3
 	GROUP_NUM 2
 	WIDTH 10 10 20
-	ALBEDO 0.0 0.4692 0.0 0.4692 0.4692 0.4692
+	ALBEDO 0.0 0.0 0.0 0.0 0.0 0.0
 );
 
 Geometry (

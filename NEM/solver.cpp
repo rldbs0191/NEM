@@ -128,6 +128,16 @@ void Solver::Run()
 	// 중성자속 저장용
 	map<tuple<int, int, int>, vector<double>> preFlux;
 
+	for (const auto& entry : globalNodes) {
+		Node* node = entry.second;
+		int region = node->getREGION() - 1;
+		node->SetCrossSection(CX.DIFFUSION[region],
+			CX.REMOVAL[region],
+			CX.SCATTERING[region],
+			CX.FISSION[region],
+			CX.CHI[region]);
+	}
+
 	do {
 		// 1. 이전 중성자속 저장
 		//cout << "preFlux\n";
@@ -152,8 +162,7 @@ void Solver::Run()
 			int region = node->getREGION() - 1;
 
 			node->SetINCOM_CURRENT(x, y, z);
-			node->SetCrossSection(CX.DIFFUSION[region],
-				CX.REMOVAL[region],
+			node->updateA(CX.REMOVAL[region],
 				CX.SCATTERING[region],
 				CX.FISSION[region],
 				CX.CHI[region]);
@@ -198,10 +207,10 @@ void Solver::Run()
 				node->setFLUX(g, node->getFLUX(g) / K_EFF);
 			}
 		}
-		cout << fixed << setprecision(5);
-		cout << "Iteration " << iter + 1 << ": K_EFF = " << K_EFF;
-		cout << scientific << setprecision(5);
-		cout <<", Error = " << maxErr << endl;
+		//cout << fixed << setprecision(5);
+		//cout << "Iteration " << iter + 1 << ": K_EFF = " << K_EFF;
+		//cout << scientific << setprecision(5);
+		//cout <<", Error = " << maxErr << endl;
 
 		converged = (maxErr < convCrit);
 		iter++;

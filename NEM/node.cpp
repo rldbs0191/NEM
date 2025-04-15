@@ -136,22 +136,10 @@ Node::~Node() {
 	delete3D(DL, dim, 3);
 }
 
-void Node::SetCrossSection(double* D, double* R, double* S, double* F, double* CHI) {
+void Node::updateA(double* R, double* S, double* F, double* CHI) {
 	int group = SOLVER->nGROUP;
 	int dim = SOLVER->nDIM;
 	double k = SOLVER->K_EFF;
-
-	for (int i = 0; i < group; i++) {
-		D_c[i] = D[i];
-	}
-
-
-	for (int i = 0; i < dim; i++)
-	{
-		for (int j = 0; j < group; j++)
-			BETA[i][j] = D[j] / WIDTH[i];
-	}
-
 	for (int i = 0; i < group; ++i) {
 		for (int j = 0; j < group; ++j) {
 			double removal = (i == j) ? R[i] : 0.0;
@@ -159,18 +147,6 @@ void Node::SetCrossSection(double* D, double* R, double* S, double* F, double* C
 			double scatter = pow(-1, i) * S[j];
 
 			A[i][j] = removal - fission + scatter;
-		}
-	}
-
-
-	for (int i = 0; i < dim; i++)
-	{
-		for (int j = 0; j < group; j++)
-		{
-			Q[i][0][j] = BETA[i][j] / (1 + 12 * BETA[i][j]);
-			Q[i][1][j] = BETA[i][j] / ((1 + 12 * BETA[i][j]) * (1 + 4 * BETA[i][j]));
-			Q[i][2][j] = (1 - 48 * BETA[i][j] * BETA[i][j]) / ((1 + 12 * BETA[i][j]) * (1 + 4 * BETA[i][j]));
-			Q[i][3][j] = BETA[i][j] / (1 + 4 * BETA[i][j]);
 		}
 	}
 
@@ -184,6 +160,32 @@ void Node::SetCrossSection(double* D, double* R, double* S, double* F, double* C
 					M4[i][j][k] += 10.0 * BETA[i][j] / WIDTH[i];
 				}
 			}
+		}
+	}
+}
+
+void Node::SetCrossSection(double* D, double* R, double* S, double* F, double* CHI) {
+	int group = SOLVER->nGROUP;
+	int dim = SOLVER->nDIM;
+
+	for (int i = 0; i < group; i++) {
+		D_c[i] = D[i];
+	}
+
+	for (int i = 0; i < dim; i++)
+	{
+		for (int j = 0; j < group; j++)
+			BETA[i][j] = D[j] / WIDTH[i];
+	}
+
+	for (int i = 0; i < dim; i++)
+	{
+		for (int j = 0; j < group; j++)
+		{
+			Q[i][0][j] = BETA[i][j] / (1 + 12 * BETA[i][j]);
+			Q[i][1][j] = BETA[i][j] / ((1 + 12 * BETA[i][j]) * (1 + 4 * BETA[i][j]));
+			Q[i][2][j] = (1 - 48 * BETA[i][j] * BETA[i][j]) / ((1 + 12 * BETA[i][j]) * (1 + 4 * BETA[i][j]));
+			Q[i][3][j] = BETA[i][j] / (1 + 4 * BETA[i][j]);
 		}
 	}
 }

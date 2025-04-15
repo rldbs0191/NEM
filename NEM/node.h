@@ -41,6 +41,7 @@ public:
 	const BOUNDARY_TYPE getBOUNDARY(int dir, int side) { return BOUNDARY[dir][side]; }
 	double*** getOUT_CURRENT() { return OUT_CURRENT; }
 	void SetCrossSection(double* D, double* R, double* S, double* F, double* CHI);
+	void updateA(double* R, double* S, double* F, double* CHI);
 	void SetINCOM_CURRENT(int x, int y, int z);
 	void SetBOUNDARY(int x, int y, int z);
 

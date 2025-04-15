@@ -17,7 +17,7 @@ int main(void) {
 	solver.Run();
 	end_point = clock();
 	caltime = (end_point - start_point) / (double)(CLOCKS_PER_SEC);
-	cout << fixed << setprecision(5);
+	cout << fixed << setprecision(3);
 	cout << caltime << " sec\n";
 	system("pause");
 	return 0;

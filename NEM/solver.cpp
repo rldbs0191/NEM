@@ -11,9 +11,8 @@ Solver::Solver()
 }
 
 Solver::~Solver() {
-	if (WIDTH) {
-		delete[] WIDTH;
-	}
+	delete[] WIDTH;
+	delete[] ALBEDO;
 }
 
 void Solver::ReadInput(const char* input)
@@ -91,7 +90,7 @@ void Solver::ReadCondition(istream& ins)
 			}
 		}
 		else if (!strcmp(buffer, "ALBEDO")) {
-			ALBEDO = new double*[nDIM];
+			ALBEDO = new double* [nDIM];
 			for (int i = 0; i < nDIM; i++)
 			{
 				ALBEDO[i] = new double[2];
@@ -121,7 +120,7 @@ void Solver::Run()
 	// 그룹별 FLUX 파일 초기화
 	vector<ofstream> fluxFiles(group);
 	for (int g = 0; g < group; ++g) {
-		string fileName = "flux_group_" + to_string(g+1) + ".txt";
+		string fileName = "flux_group_" + to_string(g + 1) + ".txt";
 		fluxFiles[g].open(fileName, std::ios::trunc);
 	}
 

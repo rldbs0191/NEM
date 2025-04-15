@@ -8,8 +8,8 @@
 class Solver;
 
 typedef vector<vector<vector<int>>> Cell;
-typedef map<int, Cell> Cells;                                
-typedef vector<vector<vector<int>>> Structure;    
+typedef map<int, Cell> Cells;
+typedef vector<vector<vector<int>>> Structure;
 typedef map<tuple<int, int, int>, Node*> NodeCoord;
 
 class Geometry {
@@ -29,7 +29,7 @@ public:
 	void ReadGeometry(istream& ins);
 	void ReadCell(istream& ins);
 	void ReadStructure(istream& ins);
-	void SetNeighbors(int x, int y, int z);	
+	void SetNeighbors(int x, int y, int z);
 	void PrintStructure() const;
 	const Structure& GetStructure() const { return STRUCTURE; }
 	void PrintNodeNeighbors(int x, int y, int z) const;

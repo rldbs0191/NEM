@@ -10,7 +10,7 @@
 #include <cmath>
 #include <stdlib.h>
 
-using namespace std;  
+using namespace std;
 
 #define NU 1.0;
 #define LINE_LEN 100  
@@ -24,10 +24,10 @@ using namespace std;
 
 #define ENDSTR ");"  
 
-enum BOUNDARY_TYPE  
-{  
-   REFLECTIVE,  
-   VACUUM  
-};  
+enum BOUNDARY_TYPE
+{
+	REFLECTIVE,
+	VACUUM
+};
 
 #endif

@@ -6,16 +6,16 @@
 
 class Solver {
 
-friend class Geometry;
-friend class CXManage;
-friend class Node;
+	friend class Geometry;
+	friend class CXManage;
+	friend class Node;
 
 private:
 	int nDIM;
 	int nGROUP;
 	double* WIDTH;
 	double** ALBEDO;
-	double K_EFF=1.0;
+	double K_EFF = 1.0;
 	CXManage CX;
 	Geometry GEOMETRY;
 public:
@@ -23,10 +23,10 @@ public:
 	~Solver();
 	void ReadInput(const char* input);
 	void ReadTitle(istream& ins);
-	void ReadCondition(istream &ins);
+	void ReadCondition(istream& ins);
 	int GetTotalNodeCount() const { return GEOMETRY.GetTotalNodeCount(); }
 	void PrintStructure() const { GEOMETRY.PrintStructure(); }
-	void PrintNodeNeighbors(int x, int y, int z) const { GEOMETRY.PrintNodeNeighbors(x,y,z); }
+	void PrintNodeNeighbors(int x, int y, int z) const { GEOMETRY.PrintNodeNeighbors(x, y, z); }
 	void PrintCX() const { CX.PrintCX(); };
 	void PrintNodeInfo(int x, int y, int z) const { GEOMETRY.PrintNodeInfo(x, y, z); }
 	void Run();

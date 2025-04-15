@@ -201,7 +201,7 @@ void Node::SetINCOM_CURRENT(int x, int y, int z) {
 					INCOM_CURRENT[i][j][k] = NEIGHBOR[i][j]->OUT_CURRENT[i][1 - j][k];
 				else {
 					if (BOUNDARY[i][j] == REFLECTIVE)
-						INCOM_CURRENT[i][j][k] = OUT_CURRENT[i][j][k]*(1. - 2. * alb[i][j]) / (1. + 2. * alb[i][j]);
+						INCOM_CURRENT[i][j][k] = OUT_CURRENT[i][j][k] * (1. - 2. * alb[i][j]) / (1. + 2. * alb[i][j]);
 					else if (BOUNDARY[i][j] == VACUUM)
 						INCOM_CURRENT[i][j][k] = 0.0;
 				}

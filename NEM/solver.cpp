@@ -221,21 +221,21 @@ void Solver::Run()
 		fluxFiles[g] << scientific << setprecision(5);
 
 		for (int z = 0; z < structure.size(); ++z) {
-			fluxFiles[g] << "Z = " << z << "	";
+			fluxFiles[g] << "Z = " << z << "\n";
 				for (int y = 0; y < structure[z].size(); ++y) {
 					for (int x = 0; x < structure[z][y].size(); ++x) {
 						int region = structure[z][y][x];
 						if (region <= 0) {
-							fluxFiles[g] << "	";
+							fluxFiles[g] << "   ";
 						}
 						else {
 							Node* node = GEOMETRY.GetGlobalNode().at({ x, y, z });
 							fluxFiles[g] << node->getFLUX(g) << "	";
 						}
 					}
-					fluxFiles[g] << "   ";
+					fluxFiles[g] << "\n";
 				}
-			fluxFiles[g] << "	";
+			fluxFiles[g] << "\n";
 		}
 		fluxFiles[g].close();
 	}

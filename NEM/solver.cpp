@@ -1,4 +1,5 @@
 #include "solver.h"
+#include <omp.h>
 
 Solver::Solver()
 {
@@ -107,79 +108,63 @@ void Solver::ReadCondition(istream& ins)
 
 void Solver::Run()
 {
-	cout << "Solver is running..." << endl;
+	cout << "Solver is running with OpenMP..." << endl;
 	int group = nGROUP;
 	int dim = nDIM;
 	double convCrit = 1e-6;
 	bool converged = false;
 	int iter = 0;
-	double prevKeff, norm, denom, maxErr;
-	maxErr = 0.0;
+	double prevKeff, norm, denom, maxErr = 0.0;
+
 	const auto& globalNodes = GEOMETRY.GetGlobalNode();
-
-	// 그룹별 FLUX 파일 초기화
-	vector<ofstream> fluxFiles(group);
-	for (int g = 0; g < group; ++g) {
-		string fileName = "flux_group_" + to_string(g + 1) + ".txt";
-		fluxFiles[g].open(fileName, std::ios::trunc);
-	}
-
-	// 중성자속 저장용
-	map<tuple<int, int, int>, vector<double>> preFlux;
+	std::vector<Node*> nodeVec;
+	std::vector<std::tuple<int, int, int>> coordVec;
+	nodeVec.reserve(globalNodes.size());
+	coordVec.reserve(globalNodes.size());
 
 	for (const auto& entry : globalNodes) {
-		Node* node = entry.second;
-		int region = node->getREGION() - 1;
-		node->SetCrossSection(CX.DIFFUSION[region],
-			CX.REMOVAL[region],
-			CX.SCATTERING[region],
-			CX.FISSION[region],
-			CX.CHI[region]);
+		coordVec.push_back(entry.first);
+		nodeVec.push_back(entry.second);
+	}
+
+	std::vector<std::vector<double>> preFlux(nodeVec.size(), std::vector<double>(group));
+
+	for (int i = 0; i < nodeVec.size(); ++i) {
+		int region = nodeVec[i]->getREGION() - 1;
+		nodeVec[i]->SetCrossSection(CX.DIFFUSION[region], CX.REMOVAL[region], CX.SCATTERING[region], CX.FISSION[region], CX.CHI[region]);
 	}
 
 	do {
-		// 1. 이전 중성자속 저장
-		//cout << "preFlux\n";
-		for (const auto& entry : globalNodes) {
-			const auto& coord = entry.first;
-			Node* node = entry.second;
-			vector<double> flux(group);
+#pragma omp parallel for
+		for (int i = 0; i < nodeVec.size(); ++i) {
 			for (int g = 0; g < group; ++g)
-				flux[g] = node->getold_FLUX(g);
-			preFlux[coord] = flux;
+				preFlux[i][g] = nodeVec[i]->getold_FLUX(g);
 		}
-
 
 		prevKeff = K_EFF;
 
-		// 2. 모든 노드 계산
-		for (const auto& entry : globalNodes) {
-			int x = get<0>(entry.first);
-			int y = get<1>(entry.first);
-			int z = get<2>(entry.first);
-			Node* node = entry.second;
-			int region = node->getREGION() - 1;
+#pragma omp parallel for
+		for (int i = 0; i < nodeVec.size(); ++i) {
+			int x = std::get<0>(coordVec[i]);
+			int y = std::get<1>(coordVec[i]);
+			int z = std::get<2>(coordVec[i]);
+			int region = nodeVec[i]->getREGION() - 1;
 
-			node->SetINCOM_CURRENT(x, y, z);
-			node->updateA(CX.REMOVAL[region],
-				CX.SCATTERING[region],
-				CX.FISSION[region],
-				CX.CHI[region]);
-			node->updateTransverseLeakage();
-			node->makeOneDimensionalFlux();
-			node->updateAverageFlux();
-			node->updateOutgoingCurrent();
+			nodeVec[i]->SetINCOM_CURRENT(x, y, z);
+			nodeVec[i]->updateA(CX.REMOVAL[region], CX.SCATTERING[region], CX.FISSION[region], CX.CHI[region]);
+			nodeVec[i]->updateTransverseLeakage();
+			nodeVec[i]->makeOneDimensionalFlux();
+			nodeVec[i]->updateAverageFlux();
+			nodeVec[i]->updateOutgoingCurrent();
 		}
 
-		// 3. K_EFF 계산
 		norm = 0.0;
 		denom = 0.0;
-		for (const auto& entry : globalNodes) {
-			const auto& coord = entry.first;
-			Node* node = entry.second;
+#pragma omp parallel for reduction(+:norm, denom)
+		for (int i = 0; i < nodeVec.size(); ++i) {
 			for (int g = 0; g < group; ++g) {
-				double valNew = node->getFLUX(g);
-				double valOld = preFlux[coord][g];
+				double valNew = nodeVec[i]->getFLUX(g);
+				double valOld = preFlux[i][g];
 				norm += valNew * valNew;
 				denom += valNew * valOld;
 			}
@@ -187,71 +172,44 @@ void Solver::Run()
 
 		K_EFF = prevKeff * norm / denom;
 
-		// 4. 수렴 판단
 		maxErr = 0.0;
-		for (const auto& entry : globalNodes) {
-			const auto& coord = entry.first;
-			Node* node = entry.second;
-			for (int g = 0; g < group; ++g) {
-				double diff = fabs(node->getFLUX(g) - preFlux[coord][g]);
-				double rel = diff / preFlux[coord][g];
-				if (rel > maxErr)
-					maxErr = rel;
+#pragma omp parallel
+		{
+			double threadMax = 0.0;
+#pragma omp for nowait
+			for (int i = 0; i < nodeVec.size(); ++i) {
+				for (int g = 0; g < group; ++g) {
+					double diff = fabs(nodeVec[i]->getFLUX(g) - preFlux[i][g]);
+					double rel = diff / (preFlux[i][g] + 1e-12);
+					if (rel > threadMax)
+						threadMax = rel;
+				}
+			}
+#pragma omp critical
+			{
+				if (threadMax > maxErr)
+					maxErr = threadMax;
 			}
 		}
 
-		for (const auto& entry : globalNodes) {
-			Node* node = entry.second;
-			for (int g = 0; g < group; ++g) {
-				node->setFLUX(g, node->getFLUX(g) / K_EFF);
-			}
+#pragma omp parallel for
+		for (int i = 0; i < nodeVec.size(); ++i) {
+			for (int g = 0; g < group; ++g)
+				nodeVec[i]->setFLUX(g, nodeVec[i]->getFLUX(g) / K_EFF);
 		}
-		//cout << fixed << setprecision(5);
-		//cout << "Iteration " << iter + 1 << ": K_EFF = " << K_EFF;
-		//cout << scientific << setprecision(5);
-		//cout <<", Error = " << maxErr << endl;
+
+		cout << fixed << setprecision(5);
+		cout << "Iteration " << iter + 1 << ": K_EFF = " << K_EFF;
+		cout << scientific << setprecision(5);
+		cout << ", Error = " << maxErr << endl;
 
 		converged = (maxErr < convCrit);
 		iter++;
+
 	} while (!converged);
+
 	cout << fixed << setprecision(5);
-	cout << "Converged after " << iter << " iterations." << "  " << "K_EFF: " << K_EFF << "  ";
+	cout << "Converged after " << iter << " iterations.  K_EFF: " << K_EFF << "  ";
 	cout << scientific << setprecision(5);
 	cout << "Error: " << maxErr << endl;
-
-	for (int g = 0; g < group; ++g) {
-		fluxFiles[g] << scientific << setprecision(5);
-		map<int, map<int, map<int, double>>> fluxData;
-
-		for (const auto& entry : globalNodes) {
-			const auto& coord = entry.first;
-			Node* node = entry.second;
-			int x = get<0>(coord);
-			int y = get<1>(coord);
-			int z = get<2>(coord);
-			fluxData[z][x][y] = node->getFLUX(g);
-		}
-		const auto& structure = GEOMETRY.GetStructure();
-		for (int g = 0; g < group; ++g) {
-			fluxFiles[g] << scientific << setprecision(2);
-			for (int z = 0; z < structure.size(); ++z) {
-				fluxFiles[g] << "Z = " << z << "\n";
-				for (int y = 0; y < structure[z].size(); ++y) {
-					for (int x = 0; x < structure[z][y].size(); ++x) {
-						int region = structure[z][y][x];
-						if (region <= 0) {
-							fluxFiles[g] << "\t";
-						}
-						else {
-							Node* node = GEOMETRY.GetGlobalNode().at({ x, y, z });
-							fluxFiles[g] << node->getFLUX(g) << "\t";
-						}
-					}
-					fluxFiles[g] << "\n";
-				}
-				fluxFiles[g] << "\n";
-			}
-			fluxFiles[g].close();
-		}
-	}
 }

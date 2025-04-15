@@ -235,7 +235,7 @@ void Geometry::SetNeighbors(int x, int y, int z) {
 void Geometry::PrintStructure() const
 {
 	std::string filename = "structure.txt";
-	std::ofstream outFile(filename); // 출력 파일 스트림 생성
+	std::ofstream outFile(filename);
 	if (!outFile.is_open()) {
 		std::cerr << "Error: Unable to open file " << filename << " for writing.\n";
 		return;
@@ -248,7 +248,7 @@ void Geometry::PrintStructure() const
 		outFile << "Layer z = " << z << "\n";
 		for (size_t y = 0; y < STRUCTURE[z].size(); ++y)
 		{
-			outFile << "y = " << y << "\n";
+			//outFile << "y = " << y << "\n";
 			for (size_t x = 0; x < STRUCTURE[z][y].size(); ++x)
 			{
 				if (STRUCTURE[z][y][x] == -1)

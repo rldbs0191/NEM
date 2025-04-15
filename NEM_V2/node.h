@@ -39,8 +39,6 @@ public:
 	Node* getNEIGHBOR(int dir, int side) const { return NEIGHBOR[dir][side]; }
 	void setNEIGHBOR(int dir, int side, Node* node) { NEIGHBOR[dir][side] = node; }
 	const BOUNDARY_TYPE getBOUNDARY(int dir, int side) { return BOUNDARY[dir][side]; }
-	double*** getQ() { return Q; }
-	double*** getC() { return C; }
 	double*** getOUT_CURRENT() { return OUT_CURRENT; }
 	void SetCrossSection(double* D, double* R, double* S, double* F, double* CHI);
 	void SetINCOM_CURRENT(int x, int y, int z);

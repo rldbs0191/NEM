@@ -234,27 +234,36 @@ void Geometry::SetNeighbors(int x, int y, int z) {
 
 void Geometry::PrintStructure() const
 {
-	cout << "\n[STRUCTURE]\n";
+	std::string filename = "structure.txt";
+	std::ofstream outFile(filename); // 출력 파일 스트림 생성
+	if (!outFile.is_open()) {
+		std::cerr << "Error: Unable to open file " << filename << " for writing.\n";
+		return;
+	}
+
+	outFile << "\n[STRUCTURE]\n";
 
 	for (size_t z = 0; z < STRUCTURE.size(); ++z)
 	{
-		cout << "Layer z = " << z << "\n";
+		outFile << "Layer z = " << z << "\n";
 		for (size_t y = 0; y < STRUCTURE[z].size(); ++y)
 		{
-			cout << "y = " << y << "\n";
+			outFile << "y = " << y << "\n";
 			for (size_t x = 0; x < STRUCTURE[z][y].size(); ++x)
 			{
 				if (STRUCTURE[z][y][x] == -1)
-					cout << setw(3) << "   " << " ";
+					outFile << std::setw(3) << "   " << " ";
 				else if (STRUCTURE[z][y][x] == 0)
-					cout << setw(3) << "   " << " ";
+					outFile << std::setw(3) << "   " << " ";
 				else
-					cout << setw(3) << STRUCTURE[z][y][x] << " ";
+					outFile << std::setw(3) << STRUCTURE[z][y][x] << " ";
 			}
-			cout << "\n";
+			outFile << "\n";
 		}
-		cout << "----\n";
+		outFile << "----\n";
 	}
+
+	outFile.close(); // 파일 스트림 닫기
 }
 
 void Geometry::PrintNodeNeighbors(int x, int y, int z) const

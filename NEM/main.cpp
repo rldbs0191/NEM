@@ -8,11 +8,7 @@ int main(void) {
 	cout << "Input file name: ";
 	cin >> inputFile;
 	solver.ReadInput(inputFile.c_str());
-	cout << "====================\n";
 	solver.PrintStructure();
-	cout << "====================\n";
-	solver.PrintCX();
-	cout << "====================\n";
 	start_point = clock();
 	solver.Run();
 	end_point = clock();

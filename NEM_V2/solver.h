@@ -24,9 +24,7 @@ public:
 	void ReadInput(const char* input);
 	void ReadTitle(istream& ins);
 	void ReadCondition(istream &ins);
-	int GetTotalNodeCount() const {
-		return GEOMETRY.GetTotalNodeCount();
-	}
+	int GetTotalNodeCount() const { return GEOMETRY.GetTotalNodeCount(); }
 	void PrintStructure() const { GEOMETRY.PrintStructure(); }
 	void PrintNodeNeighbors(int x, int y, int z) const { GEOMETRY.PrintNodeNeighbors(x,y,z); }
 	void PrintCX() const { CX.PrintCX(); };

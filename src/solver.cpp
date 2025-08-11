@@ -6,14 +6,14 @@ Solver::Solver()
 	nDIM = 0;
 	nGROUP = 0;
 	WIDTH = nullptr;
-	ALBEDO = nullptr;
+	//ALBEDO = nullptr;
 	CX = CXManage();
 	GEOMETRY = Geometry();
 }
 
 Solver::~Solver() {
 	delete[] WIDTH;
-	delete[] ALBEDO;
+	//delete[] ALBEDO;
 }
 
 void Solver::ReadInput(const char* input)
@@ -90,17 +90,17 @@ void Solver::ReadCondition(istream& ins)
 				ins >> WIDTH[i];
 			}
 		}
-		else if (!strcmp(buffer, "ALBEDO")) {
-			ALBEDO = new double* [nDIM];
-			for (int i = 0; i < nDIM; i++)
-			{
-				ALBEDO[i] = new double[2];
-				for (int j = 0; j < 2; j++)
-				{
-					ins >> ALBEDO[i][j];
-				}
-			}
-		}
+		//else if (!strcmp(buffer, "ALBEDO")) {
+		//	ALBEDO = new double* [nDIM];
+		//	for (int i = 0; i < nDIM; i++)
+		//	{
+		//		ALBEDO[i] = new double[2];
+		//		for (int j = 0; j < 2; j++)
+		//		{
+		//			ins >> ALBEDO[i][j];
+		//		}
+		//	}
+		//}
 		else if (!strcmp(buffer, ENDSTR))
 			flag = true;
 	}

@@ -14,7 +14,7 @@ private:
 	int nDIM;
 	int nGROUP;
 	double* WIDTH;
-	double** ALBEDO;
+	//double** ALBEDO;
 	double K_EFF = 1.0;
 	CXManage CX;
 	Geometry GEOMETRY;
